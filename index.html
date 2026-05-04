@@ -91,7 +91,7 @@ header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
 .ts-line-585 { stroke: var(--c585); }
 .reg-line { fill: none; stroke-width: 2.5px; stroke-dasharray: 6,3; }
 .reg-dot { stroke: var(--bg); stroke-width: 1.5px; }
-.dec-mark { stroke: var(--csel); stroke-width: 1.5px; stroke-dasharray: 5,3; opacity: 0.7; }
+.dec-mark { stroke: var(--csel); stroke-width: 1.5px; stroke-dasharray: 3,5; opacity: 0.4; }
 .crosshair { stroke: rgba(255,255,255,0.25); stroke-width: 1px; pointer-events: none; opacity: 0; }
 .hover-dot { pointer-events: none; opacity: 0; }
 #ts-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
@@ -647,8 +647,8 @@ function updateRegOverlay() {
     .attr('y1', zeroY).attr('y2', zeroY)
     .attr('stroke', 'rgba(255,255,255,0.35)').attr('stroke-width', 1.5);
   rg.append('text')
-    .attr('x', 6).attr('y', zeroY - 5)
-    .attr('text-anchor', 'start').attr('fill', 'rgba(255,255,255,0.4)')
+    .attr('x', tsInnerW / 2).attr('y', zeroY + 12)
+    .attr('text-anchor', 'middle').attr('fill', 'rgba(255,255,255,0.35)')
     .attr('font-size', '9px').text('= global average');
 
   // Zone labels
@@ -684,8 +684,8 @@ function updateRegOverlay() {
       .attr('cx', d => xSc(d.decade)).attr('cy', d => ySc(d.rel))
       .attr('r', 6).attr('fill', C[sc]).attr('stroke', 'var(--bg)').attr('stroke-width', 1.5);
 
-    // Value labels on dots
-    rg.selectAll(`.rdlbl-${sc}`).data(pts).join('text')
+    // Value labels on dots — skip the 2020 baseline (always +0.00°C)
+    rg.selectAll(`.rdlbl-${sc}`).data(pts.filter(d => d.decade !== 2020)).join('text')
       .attr('class', `rdlbl-${sc}`)
       .attr('x', d => xSc(d.decade))
       .attr('y', d => ySc(d.rel) + (d.rel >= 0 ? -10 : 18))
