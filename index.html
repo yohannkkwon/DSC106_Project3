@@ -47,6 +47,8 @@ header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
 .btn-585.on { background: rgba(247,129,102,0.18); border-color: var(--c585); color: var(--c585); }
 .btn-both.on { background: rgba(255,215,0,0.15); border-color: var(--csel); color: var(--csel); }
 #decade-slider { width: 170px; accent-color: var(--csel); }
+#ssp-info { padding: 8px 0 0; display: flex; flex-direction: column; gap: 3px; }
+.ssp-def { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
 .tick-row { display: flex; justify-content: space-between; width: 170px;
   font-size: 0.67rem; color: var(--muted); margin-top: 1px; }
 #decade-val { font-size: 0.9rem; font-weight: 600; color: var(--csel); min-width: 36px; }
@@ -139,7 +141,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72
   </div>
   <div>
     <div class="ctrl-label">Decade: <span id="decade-val">2020</span></div>
-    <input type="range" id="decade-slider" min="0" max="3" step="1" value="0">
+    <input type="range" id="decade-slider" min="2020" max="2080" step="1" value="2020">
     <div class="tick-row"><span>2020</span><span>2040</span><span>2060</span><span>2080</span></div>
   </div>
   <div id="sel-info">
@@ -168,6 +170,10 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72
     <div class="panel-sub">2015–2100 · hover for values · click map country for regional overlay</div>
     <svg id="ts-svg"></svg>
     <div id="ts-legend"></div>
+    <div id="ssp-info">
+      <span class="ssp-def"><b style="color:var(--c245)">SSP2-4.5</b> — Moderate emissions: partial climate policy, CO₂ stabilizes mid-century (~4.5 W/m² radiative forcing by 2100)</span>
+      <span class="ssp-def"><b style="color:var(--c585)">SSP5-8.5</b> — High emissions: fossil-fuel intensive, CO₂ roughly doubles by 2100 (~8.5 W/m² radiative forcing)</span>
+    </div>
   </div>
 </div>
 
@@ -219,7 +225,7 @@ const LAB     = { ssp245: 'SSP2-4.5 (moderate)', ssp585: 'SSP5-8.5 (high)' };
 const TMIN = -52, TMAX = 40;
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
-const S = { scenario: 'both', di: 0, country: null, countryName: null };
+const S = { scenario: 'both', year: 2020, country: null, countryName: null };
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 let tsData, latVals, lonVals, tempGrids, projPos, nLat, nLon;
@@ -327,10 +333,10 @@ Promise.all([
 
   // Decade slider
   document.getElementById('decade-slider').addEventListener('input', e => {
-    S.di = +e.target.value;
-    document.getElementById('decade-val').textContent = DECADES[S.di];
+    S.year = +e.target.value;
+    document.getElementById('decade-val').textContent = S.year;
     document.getElementById('map-sub').textContent =
-      `Decadal mean (°C) — ${DECADES[S.di]}s — click a country to explore its temporal trend`;
+      `Temperature (°C) — ${S.year} — click a country to explore its temporal trend`;
     renderCanvas();
     updateDecMark();
     updateRegOverlay();
@@ -402,11 +408,15 @@ function renderCanvas() {
   const cW = canvas.width, cH = canvas.height;
   const img = ctx.createImageData(cW, cH);
   const px = img.data;
-  const di = S.di;
-  const g245 = tempGrids['ssp245'][di];
-  const g585 = tempGrids['ssp585'][di];
+  const yr = S.year;
+  const di0 = Math.min(3, Math.floor((yr - 2020) / 20));
+  const di1 = Math.min(3, di0 + 1);
+  const alpha = di0 < 3 ? (yr - DECADES[di0]) / 20 : 0;
+  const g245_0 = tempGrids['ssp245'][di0], g245_1 = tempGrids['ssp245'][di1];
+  const g585_0 = tempGrids['ssp585'][di0], g585_1 = tempGrids['ssp585'][di1];
 
   const halfX = 2, halfY = 2;
+  const lerp = (a, b) => isNaN(a) ? b : isNaN(b) ? a : a + alpha * (b - a);
 
   for (let li = 0; li < nLat; li++) {
     for (let lo = 0; lo < nLon; lo++) {
@@ -416,11 +426,12 @@ function renderCanvas() {
 
       const gi = li * nLon + lo;
       let temp;
-      if (S.scenario === 'ssp245') temp = g245[gi];
-      else if (S.scenario === 'ssp585') temp = g585[gi];
+      if (S.scenario === 'ssp245') temp = lerp(g245_0[gi], g245_1[gi]);
+      else if (S.scenario === 'ssp585') temp = lerp(g585_0[gi], g585_1[gi]);
       else {
-        const t1 = g245[gi], t2 = g585[gi];
-        temp = (!isNaN(t1) && !isNaN(t2)) ? (t1 + t2) * 0.5 : (isNaN(t1) ? t2 : t1);
+        const t245 = lerp(g245_0[gi], g245_1[gi]);
+        const t585 = lerp(g585_0[gi], g585_1[gi]);
+        temp = (!isNaN(t245) && !isNaN(t585)) ? (t245 + t585) * 0.5 : (isNaN(t245) ? t585 : t245);
       }
       if (isNaN(temp)) continue;
 
@@ -514,12 +525,12 @@ function initTS() {
 
 function updateDecMark() {
   if (!xSc) return;
-  const x = xSc(DECADES[S.di]);
+  const x = xSc(S.year);
   d3.select('#dec-mark').attr('x1',x).attr('x2',x);
   d3.select('#ts-g').select('.dec-label').remove();
   d3.select('#ts-g').append('text').attr('class','dec-label ax-label')
     .attr('x', x+3).attr('y', 14).attr('fill','var(--csel)').attr('font-size','9px')
-    .text(DECADES[S.di]+'s');
+    .text(S.year);
 }
 
 function updateTS() {
@@ -636,12 +647,12 @@ function updateRegOverlay() {
     .attr('y1', zeroY).attr('y2', zeroY)
     .attr('stroke', 'rgba(255,255,255,0.35)').attr('stroke-width', 1.5);
   rg.append('text')
-    .attr('x', tsInnerW - 4).attr('y', zeroY - 5)
-    .attr('text-anchor', 'end').attr('fill', 'rgba(255,255,255,0.4)')
+    .attr('x', 6).attr('y', zeroY - 5)
+    .attr('text-anchor', 'start').attr('fill', 'rgba(255,255,255,0.4)')
     .attr('font-size', '9px').text('= global average');
 
   // Zone labels
-  rg.append('text').attr('x', 6).attr('y', 16)
+  rg.append('text').attr('x', 6).attr('y', 26)
     .attr('fill', 'rgba(247,129,102,0.55)').attr('font-size', '9px').text('▲ warming faster than world');
   rg.append('text').attr('x', 6).attr('y', tsInnerH - 6)
     .attr('fill', 'rgba(88,166,255,0.55)').attr('font-size', '9px').text('▼ warming slower than world');
@@ -680,6 +691,8 @@ function updateRegOverlay() {
       .attr('y', d => ySc(d.rel) + (d.rel >= 0 ? -10 : 18))
       .attr('text-anchor', 'middle').attr('fill', C[sc])
       .attr('font-size', '9px').attr('font-weight', '600')
+      .style('paint-order', 'stroke')
+      .style('stroke', 'var(--bg)').style('stroke-width', '3px')
       .text(d => (d.rel >= 0 ? '+' : '') + d.rel.toFixed(2) + '°C');
   }
 
