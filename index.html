@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Surface Temperature Projections | DSC 106</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #7d8590;
+  --c245: #58a6ff;
+  --c585: #f78166;
+  --csel: #ffd700;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+#loading {
+  position: fixed; inset: 0; background: var(--bg); z-index: 999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+}
+#loading p { color: var(--muted); font-size: 0.88rem; }
+.spinner { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--csel);
+  border-radius: 50%; animation: spin 0.75s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+header { padding: 18px 36px; border-bottom: 1px solid var(--border); }
+header h1 { font-size: 1.25rem; font-weight: 700; }
+header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+
+#controls {
+  display: flex; gap: 28px; align-items: center; flex-wrap: wrap;
+  padding: 12px 36px; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.ctrl-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+.btn-group { display: flex; gap: 3px; }
+.btn-group button {
+  padding: 4px 11px; border: 1px solid var(--border); background: transparent;
+  color: var(--text); border-radius: 5px; cursor: pointer; font-size: 0.78rem;
+  transition: all 0.15s;
+}
+.btn-group button:hover { background: rgba(255,255,255,0.06); }
+.btn-245.on { background: rgba(88,166,255,0.18); border-color: var(--c245); color: var(--c245); }
+.btn-585.on { background: rgba(247,129,102,0.18); border-color: var(--c585); color: var(--c585); }
+.btn-both.on { background: rgba(255,215,0,0.15); border-color: var(--csel); color: var(--csel); }
+#decade-slider { width: 170px; accent-color: var(--csel); }
+.tick-row { display: flex; justify-content: space-between; width: 170px;
+  font-size: 0.67rem; color: var(--muted); margin-top: 1px; }
+#decade-val { font-size: 0.9rem; font-weight: 600; color: var(--csel); min-width: 36px; }
+#sel-info { display: none; align-items: center; gap: 8px; }
+#sel-name { font-size: 0.82rem; color: var(--csel); }
+.clear-btn { padding: 3px 7px; border: 1px solid var(--border); background: transparent;
+  color: var(--muted); border-radius: 4px; cursor: pointer; font-size: 0.72rem; }
+
+#panels { display: flex; height: calc(100vh - 130px); min-height: 480px; }
+
+/* MAP */
+#map-panel { flex: 0 0 62%; display: flex; flex-direction: column;
+  padding: 12px 16px 8px 36px; border-right: 1px solid var(--border); }
+.panel-hd { font-size: 0.82rem; font-weight: 600; margin-bottom: 2px; }
+.panel-sub { font-size: 0.7rem; color: var(--muted); margin-bottom: 8px; }
+#map-wrap { position: relative; flex: 1; }
+#map-canvas, #map-svg { position: absolute; top: 0; left: 0; }
+#map-svg { overflow: visible; }
+.country { fill: transparent; stroke: rgba(255,255,255,0.14); stroke-width: 0.5px; cursor: pointer; }
+.country:hover { stroke: rgba(255,255,255,0.45); stroke-width: 0.9px; }
+.country.sel { stroke: var(--csel); stroke-width: 2px; }
+.graticule { fill: none; stroke: rgba(255,255,255,0.04); stroke-width: 0.5px; }
+.sphere { fill: none; stroke: #2a3a4a; stroke-width: 1px; }
+#legend-wrap { display: flex; align-items: center; gap: 7px; margin-top: 5px; }
+#leg-canvas { height: 10px; width: 150px; border-radius: 2px; }
+#legend-wrap span { font-size: 0.68rem; color: var(--muted); }
+
+/* TIME SERIES */
+#ts-panel { flex: 1; display: flex; flex-direction: column; padding: 12px 36px 8px 16px; }
+#ts-panel .panel-hd { transition: color 0.2s; }
+#ts-svg { width: 100%; }
+.grid line { stroke: rgba(255,255,255,0.05); }
+.grid path { display: none; }
+.axis text { fill: var(--muted); font-size: 10px; }
+.axis path, .axis line { stroke: var(--border); }
+.ax-label { fill: var(--muted); font-size: 10px; }
+.ts-line { fill: none; stroke-width: 2px; }
+.ts-line.dim { opacity: 0.15; }
+.ts-line-245 { stroke: var(--c245); }
+.ts-line-585 { stroke: var(--c585); }
+.reg-line { fill: none; stroke-width: 2.5px; stroke-dasharray: 6,3; }
+.reg-dot { stroke: var(--bg); stroke-width: 1.5px; }
+.dec-mark { stroke: var(--csel); stroke-width: 1.5px; stroke-dasharray: 5,3; opacity: 0.7; }
+.crosshair { stroke: rgba(255,255,255,0.25); stroke-width: 1px; pointer-events: none; opacity: 0; }
+.hover-dot { pointer-events: none; opacity: 0; }
+#ts-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: var(--muted); }
+.leg-sw { width: 18px; height: 3px; border-radius: 2px; }
+.leg-sw.dash { border-top: 2px dashed; height: 0; background: transparent !important; margin-top: 1px; }
+
+#tooltip {
+  position: fixed; background: rgba(13,17,23,0.94); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 11px; font-size: 0.76rem; pointer-events: none;
+  opacity: 0; transition: opacity 0.12s; z-index: 200; max-width: 210px;
+}
+#tooltip.show { opacity: 1; }
+.tt-hd { font-weight: 600; margin-bottom: 4px; font-size: 0.8rem; }
+.tt-row { color: var(--muted); }
+.tt-row span { color: var(--text); }
+
+/* WRITE-UP */
+#writeup { max-width: 820px; margin: 60px auto; padding: 0 36px 60px; line-height: 1.7; }
+#writeup h2 { font-size: 1rem; font-weight: 700; color: var(--csel); border-top: 1px solid var(--border);
+  padding-top: 28px; margin-bottom: 14px; }
+#writeup h3 { font-size: 0.88rem; font-weight: 600; margin: 18px 0 6px; }
+#writeup p, #writeup li { font-size: 0.83rem; color: var(--muted); margin-bottom: 8px; }
+#writeup ul { padding-left: 20px; }
+#writeup li { margin-bottom: 5px; }
+footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72rem;
+  border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><p>Loading CMIP6 climate data…</p></div>
+
+<header>
+  <h1>Global Surface Temperature Projections Under Climate Change</h1>
+  <p>CMIP6 ensemble &nbsp;·&nbsp; SSP2-4.5 vs SSP5-8.5 emission scenarios &nbsp;·&nbsp; 2015–2100 projection</p>
+</header>
+
+<div id="controls">
+  <div>
+    <div class="ctrl-label">Emission Scenario</div>
+    <div class="btn-group">
+      <button class="btn-245" id="btn-245" onclick="setScenario('ssp245')">SSP2-4.5</button>
+      <button class="btn-585" id="btn-585" onclick="setScenario('ssp585')">SSP5-8.5</button>
+      <button class="btn-both" id="btn-both" onclick="setScenario('both')">Both</button>
+    </div>
+  </div>
+  <div>
+    <div class="ctrl-label">Decade: <span id="decade-val">2020</span></div>
+    <input type="range" id="decade-slider" min="0" max="3" step="1" value="0">
+    <div class="tick-row"><span>2020</span><span>2040</span><span>2060</span><span>2080</span></div>
+  </div>
+  <div id="sel-info">
+    <div class="ctrl-label">Region:</div>
+    <span id="sel-name"></span>
+    <button class="clear-btn" onclick="clearSel()">✕ clear</button>
+  </div>
+</div>
+
+<div id="panels">
+  <div id="map-panel">
+    <div class="panel-hd">Surface Temperature by Region</div>
+    <div class="panel-sub" id="map-sub">Decadal mean (°C) — click a country to explore its temporal trend</div>
+    <div id="map-wrap">
+      <canvas id="map-canvas"></canvas>
+      <svg id="map-svg"></svg>
+    </div>
+    <div id="legend-wrap">
+      <span id="leg-min">−52°C</span>
+      <canvas id="leg-canvas"></canvas>
+      <span id="leg-max">+40°C</span>
+    </div>
+  </div>
+  <div id="ts-panel">
+    <div class="panel-hd" id="ts-hd">Global Mean Temperature</div>
+    <div class="panel-sub">2015–2100 · hover for values · click map country for regional overlay</div>
+    <svg id="ts-svg"></svg>
+    <div id="ts-legend"></div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<section id="writeup">
+  <h2>Visualization Write-Up</h2>
+
+  <h3>Research Question</h3>
+  <p>How does projected surface temperature change vary across the globe under different emission scenarios, and how do regional trends diverge over time? This question matters because different parts of the world face sharply different warming trajectories — the Arctic warms 2–4× faster than the global mean, and the gap between SSP2-4.5 and SSP5-8.5 compounds annually.</p>
+
+  <h3>Design Rationale &amp; Encoding Choices</h3>
+  <ul>
+    <li><strong>Natural Earth projection (map):</strong> Chosen for its area-preserving quality at mid-latitudes and familiar appearance. Mercator was rejected because it severely exaggerates polar regions, which are the areas of greatest warming — the opposite of what we want to emphasize.</li>
+    <li><strong>Diverging blue→red color scale (map):</strong> Centered at 0°C (freezing), this physically meaningful reference immediately conveys below-vs-above freezing. The palette matches the perceptual convention in climate science (blue = cold, red = hot). A sequential scale was rejected because it would hide the meaningful zero crossing.</li>
+    <li><strong>Canvas raster beneath SVG borders:</strong> Climate model output is gridded data, not country-level data. Rendering each grid cell directly (rather than aggregating to countries) preserves spatial fidelity and reveals sub-national gradients — e.g., the Tibetan Plateau vs. the Ganges plain within India, or continental vs. coastal gradients across Australia.</li>
+    <li><strong>Linked time series (right panel):</strong> Both SSP2-4.5 (blue) and SSP5-8.5 (red) global trajectories are shown simultaneously so the viewer can immediately perceive the divergence. Solid lines for the global mean; dashed lines for the selected country's 4 decadal values — the dash communicates that these are sparser, aggregated points rather than continuous yearly observations.</li>
+    <li><strong>Decade slider rather than animation:</strong> Gives the viewer direct control over the temporal comparison, enabling deliberate juxtaposition (e.g., 2020 vs. 2080) without the cognitive load of a looping animation.</li>
+    <li><strong>Crosshair + tooltip on time series:</strong> Details-on-demand — the chart is clean by default; exact temperatures surface only on hover.</li>
+  </ul>
+  <p>Alternatives considered: a country-level choropleth (rejected: masks within-country gradients and introduces MAUP artifacts); a difference map showing 2080−2020 anomaly (considered as a mode — the decade slider achieves the same insight through interaction); animated auto-play (too passive — the slider promotes active exploration).</p>
+
+  <h3>Data Transformations</h3>
+  <p>The CMIP6 dataset was subsetted to Near-Surface Air Temperature (<em>tas</em>) for SSP2-4.5 and SSP5-8.5 scenarios, 2015–2100. The spatial file contains decadal means on a ~1.25° × 0.94° global grid; multiple ensemble members per cell are averaged to reduce model noise. The timeseries file contains global area-weighted annual means. No data values are excluded; the full temperature range (−52°C to +40°C) is preserved and clearly labeled.</p>
+
+  <h3>Development Process</h3>
+  <p>This is an individual submission for DSC 106. Approximate time breakdown:</p>
+  <ul>
+    <li>Data acquisition and Python preprocessing (xarray, pandas, Google Colab): ~3 hrs</li>
+    <li>Exploratory analysis in matplotlib (6 static figures): ~2 hrs</li>
+    <li>D3.js map: projection, canvas raster, SVG border overlay, coordinate transforms: ~7 hrs</li>
+    <li>Time series chart: axes, global lines, crosshair, regional overlay, dynamic Y-scale: ~4 hrs</li>
+    <li>Controls, cross-panel linking, tooltips, styling: ~3 hrs</li>
+    <li>Write-up: ~1 hr</li>
+  </ul>
+  <p>The most time-consuming aspect was the canvas raster rendering — specifically converting the climate model's 0–360° longitude convention to the −180–180° convention expected by D3's projections, and achieving smooth performance with 55,000+ grid cells per frame by using pre-computed projected positions and a pixel-level color LUT.</p>
+</section>
+
+<footer>DSC 106 Project 3 &nbsp;·&nbsp; CMIP6 Climate Data &nbsp;·&nbsp; UC San Diego</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const DECADES = [2020, 2040, 2060, 2080];
+const SCENS   = ['ssp245', 'ssp585'];
+const C       = { ssp245: '#58a6ff', ssp585: '#f78166' };
+const LAB     = { ssp245: 'SSP2-4.5 (moderate)', ssp585: 'SSP5-8.5 (high)' };
+const TMIN = -52, TMAX = 40;
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const S = { scenario: 'both', di: 0, country: null, countryName: null };
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+let tsData, latVals, lonVals, tempGrids, projPos, nLat, nLon;
+let countryFeats, projection, geoPath;
+let mapW, mapH, tsW, tsH;
+let xSc, ySc, tsInnerH, tsInnerW;
+
+const tsM = { t: 30, r: 18, b: 45, l: 56 };
+
+// ─── COLOR LUT ───────────────────────────────────────────────────────────────
+const LUT_N = 512;
+const LUT_R = new Uint8Array(LUT_N);
+const LUT_G = new Uint8Array(LUT_N);
+const LUT_B = new Uint8Array(LUT_N);
+// blue (cold) → white (0°C) → red (hot)  using RdBu reversed
+const cScale = d3.scaleDiverging().domain([TMIN, 0, TMAX])
+  .interpolator(t => d3.interpolateRdBu(1 - t)).clamp(true);
+for (let i = 0; i < LUT_N; i++) {
+  const c = d3.rgb(cScale(TMIN + (i / (LUT_N - 1)) * (TMAX - TMIN)));
+  LUT_R[i] = c.r; LUT_G[i] = c.g; LUT_B[i] = c.b;
+}
+function tIdx(t) { return Math.max(0, Math.min(LUT_N - 1, Math.round((t - TMIN) / (TMAX - TMIN) * (LUT_N - 1)))); }
+
+// ─── COUNTRY NAMES (ISO 3166-1 numeric → common name) ────────────────────────
+const NAMES = {
+  4:'Afghanistan',8:'Albania',12:'Algeria',24:'Angola',32:'Argentina',36:'Australia',
+  40:'Austria',50:'Bangladesh',56:'Belgium',64:'Bhutan',68:'Bolivia',76:'Brazil',
+  100:'Bulgaria',104:'Myanmar',116:'Cambodia',120:'Cameroon',124:'Canada',
+  144:'Sri Lanka',152:'Chile',156:'China',170:'Colombia',178:'Congo',
+  180:'DR Congo',188:'Costa Rica',192:'Cuba',208:'Denmark',218:'Ecuador',
+  818:'Egypt',222:'El Salvador',231:'Ethiopia',246:'Finland',250:'France',
+  266:'Gabon',276:'Germany',288:'Ghana',300:'Greece',320:'Guatemala',
+  332:'Haiti',340:'Honduras',356:'India',360:'Indonesia',364:'Iran',
+  368:'Iraq',372:'Ireland',376:'Israel',380:'Italy',392:'Japan',
+  400:'Jordan',398:'Kazakhstan',404:'Kenya',408:'North Korea',410:'South Korea',
+  418:'Laos',422:'Lebanon',430:'Liberia',434:'Libya',484:'Mexico',
+  496:'Mongolia',504:'Morocco',508:'Mozambique',516:'Namibia',524:'Nepal',
+  528:'Netherlands',554:'New Zealand',562:'Niger',566:'Nigeria',
+  578:'Norway',586:'Pakistan',591:'Panama',598:'Papua New Guinea',
+  600:'Paraguay',604:'Peru',608:'Philippines',616:'Poland',643:'Russia',
+  682:'Saudi Arabia',686:'Senegal',694:'Sierra Leone',706:'Somalia',
+  710:'South Africa',724:'Spain',729:'Sudan',752:'Sweden',756:'Switzerland',
+  760:'Syria',764:'Thailand',788:'Tunisia',792:'Turkey',800:'Uganda',
+  804:'Ukraine',784:'UAE',826:'United Kingdom',840:'United States',
+  858:'Uruguay',862:'Venezuela',704:'Vietnam',887:'Yemen',894:'Zambia',
+  716:'Zimbabwe',32:'Argentina',474:'Martinique',388:'Jamaica',
+  858:'Uruguay',840:'United States of America',
+};
+function cName(id) { return NAMES[+id] || `Region ${id}`; }
+
+// ─── LOAD ─────────────────────────────────────────────────────────────────────
+Promise.all([
+  d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'),
+  d3.csv('timeseries.csv', d => ({ year: +d.year, scenario: d.scenario, tas: +d.tas_celsius })),
+  d3.csv('spatial.csv',    d => ({ lat: +d.lat, lon: +d.lon, scenario: d.scenario, decade: +d.decade, tas: +d.tas_celsius }))
+]).then(([world, ts, sp]) => {
+  tsData = ts;
+  countryFeats = topojson.feature(world, world.objects.countries).features;
+
+  // unique lat / lon (sorted)
+  const latSet = new Set(sp.map(d => d.lat));
+  const lonSet = new Set(sp.map(d => d.lon));
+  latVals = [...latSet].sort((a,b) => a - b);
+  lonVals = [...lonSet].sort((a,b) => a - b);
+  nLat = latVals.length; nLon = lonVals.length;
+
+  const latMap = new Map(latVals.map((v,i) => [v,i]));
+  const lonMap = new Map(lonVals.map((v,i) => [v,i]));
+
+  // Accumulate sums + counts into typed arrays
+  const sums   = {}; const cnts = {};
+  for (const sc of SCENS) {
+    sums[sc] = []; cnts[sc] = [];
+    for (let di = 0; di < 4; di++) {
+      sums[sc].push(new Float64Array(nLat * nLon));
+      cnts[sc].push(new Uint16Array(nLat * nLon));
+    }
+  }
+  for (const d of sp) {
+    const di = DECADES.indexOf(d.decade); if (di < 0) continue;
+    const li = latMap.get(d.lat); const lo = lonMap.get(d.lon);
+    if (li == null || lo == null) continue;
+    const idx = li * nLon + lo;
+    sums[d.scenario][di][idx] += d.tas;
+    cnts[d.scenario][di][idx]++;
+  }
+  tempGrids = {};
+  for (const sc of SCENS) {
+    tempGrids[sc] = [];
+    for (let di = 0; di < 4; di++) {
+      const g = new Float32Array(nLat * nLon).fill(NaN);
+      for (let i = 0; i < g.length; i++)
+        if (cnts[sc][di][i] > 0) g[i] = sums[sc][di][i] / cnts[sc][di][i];
+      tempGrids[sc].push(g);
+    }
+  }
+
+  initSizes();
+  initMap();
+  initTS();
+  renderCanvas();
+  updateTS();
+  drawLegend();
+  document.getElementById('loading').style.display = 'none';
+
+  // Decade slider
+  document.getElementById('decade-slider').addEventListener('input', e => {
+    S.di = +e.target.value;
+    document.getElementById('decade-val').textContent = DECADES[S.di];
+    document.getElementById('map-sub').textContent =
+      `Decadal mean (°C) — ${DECADES[S.di]}s — click a country to explore its temporal trend`;
+    renderCanvas();
+    updateDecMark();
+    updateRegOverlay();
+  });
+
+  setScenario('both');
+}).catch(err => {
+  document.getElementById('loading').innerHTML =
+    `<p style="color:#f78166;padding:20px">Error: ${err.message}</p>`;
+  console.error(err);
+});
+
+// ─── SIZES ────────────────────────────────────────────────────────────────────
+function initSizes() {
+  const mwrap = document.getElementById('map-wrap');
+  const tspan = document.getElementById('ts-panel');
+  const mr = mwrap.getBoundingClientRect();
+  const tr = tspan.getBoundingClientRect();
+  mapW = Math.floor(mr.width  || 700); mapH = Math.floor(mr.height || 400);
+  tsW  = Math.floor(tr.width  || 380); tsH  = Math.min(Math.floor((tr.height || 480) - 56), 420);
+
+  document.getElementById('map-canvas').width  = mapW;
+  document.getElementById('map-canvas').height = mapH;
+  document.getElementById('map-svg').setAttribute('width',  mapW);
+  document.getElementById('map-svg').setAttribute('height', mapH);
+  document.getElementById('ts-svg').setAttribute('width',  tsW);
+  document.getElementById('ts-svg').setAttribute('height', tsH);
+
+  projection = d3.geoNaturalEarth1()
+    .scale(Math.min(mapW / 6.3, mapH / 3.2))
+    .translate([mapW / 2, mapH / 2]);
+  geoPath = d3.geoPath().projection(projection);
+
+  // Pre-compute projected positions for every grid cell (done once)
+  projPos = new Float32Array(nLat * nLon * 2);
+  const latStep = latVals[1] - latVals[0];
+  const lonStep = lonVals[1] - lonVals[0];
+  for (let li = 0; li < nLat; li++) {
+    for (let lo = 0; lo < nLon; lo++) {
+      const lat = latVals[li];
+      const lon360 = lonVals[lo];
+      const lon = lon360 > 180 ? lon360 - 360 : lon360;
+      const p = projection([lon, lat]);
+      const base = (li * nLon + lo) * 2;
+      projPos[base]   = p ? p[0] : NaN;
+      projPos[base+1] = p ? p[1] : NaN;
+    }
+  }
+
+  tsInnerW = tsW - tsM.l - tsM.r;
+  tsInnerH = tsH - tsM.t - tsM.b;
+}
+
+// ─── MAP INIT ─────────────────────────────────────────────────────────────────
+function initMap() {
+  const svg = d3.select('#map-svg');
+  svg.selectAll('*').remove();
+  svg.append('path').datum({type:'Sphere'}).attr('class','sphere').attr('d', geoPath);
+  svg.append('path').datum(d3.geoGraticule()()).attr('class','graticule').attr('d', geoPath);
+  svg.selectAll('.country').data(countryFeats).join('path')
+    .attr('class','country').attr('d', geoPath)
+    .on('mousemove', mapHover).on('mouseleave', mapLeave).on('click', mapClick);
+}
+
+// ─── CANVAS RENDER ────────────────────────────────────────────────────────────
+function renderCanvas() {
+  const canvas = document.getElementById('map-canvas');
+  const ctx = canvas.getContext('2d');
+  const cW = canvas.width, cH = canvas.height;
+  const img = ctx.createImageData(cW, cH);
+  const px = img.data;
+  const di = S.di;
+  const g245 = tempGrids['ssp245'][di];
+  const g585 = tempGrids['ssp585'][di];
+
+  const halfX = 2, halfY = 2;
+
+  for (let li = 0; li < nLat; li++) {
+    for (let lo = 0; lo < nLon; lo++) {
+      const base = (li * nLon + lo) * 2;
+      const cx = projPos[base], cy = projPos[base+1];
+      if (isNaN(cx)) continue;
+
+      const gi = li * nLon + lo;
+      let temp;
+      if (S.scenario === 'ssp245') temp = g245[gi];
+      else if (S.scenario === 'ssp585') temp = g585[gi];
+      else {
+        const t1 = g245[gi], t2 = g585[gi];
+        temp = (!isNaN(t1) && !isNaN(t2)) ? (t1 + t2) * 0.5 : (isNaN(t1) ? t2 : t1);
+      }
+      if (isNaN(temp)) continue;
+
+      const ci = tIdx(temp);
+      const r = LUT_R[ci], g = LUT_G[ci], b = LUT_B[ci];
+
+      const x0 = Math.max(0, Math.floor(cx - halfX));
+      const x1 = Math.min(cW - 1, Math.ceil(cx + halfX));
+      const y0 = Math.max(0, Math.floor(cy - halfY));
+      const y1 = Math.min(cH - 1, Math.ceil(cy + halfY));
+
+      for (let py = y0; py <= y1; py++) {
+        for (let x = x0; x <= x1; x++) {
+          const i = (py * cW + x) * 4;
+          px[i] = r; px[i+1] = g; px[i+2] = b; px[i+3] = 228;
+        }
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+// ─── COLOR LEGEND ─────────────────────────────────────────────────────────────
+function drawLegend() {
+  const lc = document.getElementById('leg-canvas');
+  const ctx = lc.getContext('2d');
+  const w = lc.width || 150;
+  for (let x = 0; x < w; x++) {
+    const ci = tIdx(TMIN + (x / (w - 1)) * (TMAX - TMIN));
+    ctx.fillStyle = `rgb(${LUT_R[ci]},${LUT_G[ci]},${LUT_B[ci]})`;
+    ctx.fillRect(x, 0, 1, 10);
+  }
+}
+
+// ─── TIME SERIES ──────────────────────────────────────────────────────────────
+function initTS() {
+  const svg = d3.select('#ts-svg');
+  svg.selectAll('*').remove();
+
+  const allTas = tsData.map(d => d.tas);
+  xSc = d3.scaleLinear().domain([2015, 2100]).range([0, tsInnerW]);
+  ySc = d3.scaleLinear().domain([d3.min(allTas) - 0.3, d3.max(allTas) + 0.5]).range([tsInnerH, 0]);
+
+  const g = svg.append('g').attr('transform', `translate(${tsM.l},${tsM.t})`).attr('id','ts-g');
+
+  // Grid
+  g.append('g').attr('class','grid').call(d3.axisLeft(ySc).tickSize(-tsInnerW).tickFormat(''));
+
+  // Axes
+  g.append('g').attr('class','axis').attr('id','x-ax').attr('transform',`translate(0,${tsInnerH})`)
+    .call(d3.axisBottom(xSc).tickFormat(d3.format('d')).ticks(9));
+  g.append('g').attr('class','axis').attr('id','y-ax')
+    .call(d3.axisLeft(ySc).ticks(6).tickFormat(d => d.toFixed(1)+'°C'));
+
+  // Axis labels
+  g.append('text').attr('class','ax-label').attr('text-anchor','middle')
+    .attr('x', tsInnerW/2).attr('y', tsInnerH + 40).text('Year');
+  g.append('text').attr('class','ax-label ax-label-y').attr('text-anchor','middle')
+    .attr('transform','rotate(-90)').attr('x', -tsInnerH/2).attr('y', -44)
+    .text('Surface Temp (°C)');
+
+  // Global lines
+  const lineGen = d3.line().x(d => xSc(d.year)).y(d => ySc(d.tas)).curve(d3.curveCatmullRom.alpha(0.5));
+  for (const sc of SCENS) {
+    const d = tsData.filter(r => r.scenario === sc).sort((a,b) => a.year - b.year);
+    g.append('path').datum(d).attr('class',`ts-line ts-line-${sc.replace('ssp','')}`)
+      .attr('id',`line-${sc}`).attr('d', lineGen(d));
+  }
+
+  // Decade marker
+  g.append('line').attr('class','dec-mark').attr('id','dec-mark').attr('y1',0).attr('y2',tsInnerH);
+
+  // Regional overlay group
+  g.append('g').attr('id','reg-g');
+
+  // Crosshair + hover dots
+  g.append('line').attr('class','crosshair').attr('id','ch').attr('y1',0).attr('y2',tsInnerH);
+  for (const sc of SCENS) {
+    g.append('circle').attr('class','hover-dot').attr('id',`hdot-${sc}`).attr('r',4)
+      .attr('fill', C[sc]).attr('stroke','var(--bg)').attr('stroke-width',1.5);
+  }
+
+  // Invisible hover overlay
+  g.append('rect').attr('width', tsInnerW).attr('height', tsInnerH)
+    .attr('fill','transparent').style('cursor','crosshair')
+    .on('mousemove', tsHover).on('mouseleave', tsLeave);
+
+  updateDecMark();
+  buildTsLegend();
+}
+
+function updateDecMark() {
+  if (!xSc) return;
+  const x = xSc(DECADES[S.di]);
+  d3.select('#dec-mark').attr('x1',x).attr('x2',x);
+  d3.select('#ts-g').select('.dec-label').remove();
+  d3.select('#ts-g').append('text').attr('class','dec-label ax-label')
+    .attr('x', x+3).attr('y', 14).attr('fill','var(--csel)').attr('font-size','9px')
+    .text(DECADES[S.di]+'s');
+}
+
+function updateTS() {
+  if (!xSc) return;
+  d3.select('#line-ssp245').classed('dim', S.scenario === 'ssp585');
+  d3.select('#line-ssp585').classed('dim', S.scenario === 'ssp245');
+  updateRegOverlay();
+}
+
+function updateRegOverlay() {
+  if (!xSc) return;
+  const rg = d3.select('#reg-g');
+  rg.selectAll('*').remove();
+  if (!S.country) return;
+
+  // Gather grid cells inside selected country (bounding box pre-filter + geoContains)
+  const feat = S.country;
+  const [[minLon, minLat],[maxLon, maxLat]] = d3.geoBounds(feat);
+  const latStep = latVals[1] - latVals[0];
+  const lonStep = lonVals[1] - lonVals[0];
+
+  const scList = S.scenario === 'both' ? SCENS : [S.scenario];
+  const cellMeans = {};
+  for (const sc of scList) cellMeans[sc] = DECADES.map(() => ({ sum:0, n:0 }));
+
+  for (let li = 0; li < nLat; li++) {
+    const lat = latVals[li];
+    if (lat < minLat - latStep || lat > maxLat + latStep) continue;
+    for (let lo = 0; lo < nLon; lo++) {
+      const lon360 = lonVals[lo];
+      const lon = lon360 > 180 ? lon360 - 360 : lon360;
+      if (lon < minLon - lonStep || lon > maxLon + lonStep) continue;
+      if (!d3.geoContains(feat, [lon, lat])) continue;
+      const gi = li * nLon + lo;
+      for (const sc of scList) {
+        for (let di = 0; di < 4; di++) {
+          const t = tempGrids[sc][di][gi];
+          if (!isNaN(t)) { cellMeans[sc][di].sum += t; cellMeans[sc][di].n++; }
+        }
+      }
+    }
+  }
+
+  // Check we have data
+  const hasData = scList.some(sc => cellMeans[sc][0].n > 0);
+  if (!hasData) return;
+
+  // ── ANOMALY MODE ──────────────────────────────────────────────────────────
+  // Regional baseline: decade 0 (2020s) mean per scenario
+  const regBase = {};
+  for (const sc of scList) {
+    const m = cellMeans[sc][0];
+    regBase[sc] = m.n > 0 ? m.sum / m.n : null;
+  }
+
+  // Global baseline: year 2020 value per scenario (anchor for global lines)
+  const globalBase = {};
+  for (const sc of SCENS) {
+    const row = tsData.find(d => d.scenario === sc && d.year === 2020);
+    globalBase[sc] = row ? row.tas : 0;
+  }
+
+  // Regional anomalies (Δ°C from 2020 baseline)
+  const regAnomalies = {};
+  for (const sc of scList) {
+    if (regBase[sc] == null) continue;
+    regAnomalies[sc] = DECADES.map((dec, di) => {
+      const m = cellMeans[sc][di];
+      return m.n > 0 ? { decade: dec, delta: (m.sum / m.n) - regBase[sc] } : null;
+    }).filter(Boolean);
+  }
+
+  // Global anomaly range
+  const globalAnomalyVals = tsData.map(d => d.tas - (globalBase[d.scenario] ?? 0));
+  // Regional anomaly range
+  const regAnomalyVals = Object.values(regAnomalies).flat().map(d => d.delta);
+  const allAnomalies = [...globalAnomalyVals, ...regAnomalyVals];
+
+  // New y-scale: anomaly (°C since 2020)
+  ySc = d3.scaleLinear()
+    .domain([Math.min(0, d3.min(allAnomalies)) - 0.2, d3.max(allAnomalies) + 0.3])
+    .range([tsInnerH, 0]);
+
+  // Update y-axis + label
+  d3.select('#y-ax').call(d3.axisLeft(ySc).ticks(6).tickFormat(d => (d >= 0 ? '+' : '') + d.toFixed(1) + '°C'));
+  d3.select('#ts-g').select('.ax-label-y').text('Warming since 2020s (°C)');
+
+  // Zero reference line
+  rg.append('line').attr('class','zero-ref')
+    .attr('x1', 0).attr('x2', tsInnerW)
+    .attr('y1', ySc(0)).attr('y2', ySc(0))
+    .attr('stroke', 'rgba(255,255,255,0.2)').attr('stroke-width', 1)
+    .attr('stroke-dasharray', '3,3');
+
+  // Redraw global lines as anomalies
+  const globalLineGen = d3.line()
+    .x(d => xSc(d.year))
+    .y(d => ySc(d.tas - globalBase[d.scenario]))
+    .curve(d3.curveCatmullRom.alpha(0.5));
+  for (const sc of SCENS) {
+    const d = tsData.filter(r => r.scenario === sc).sort((a,b) => a.year - b.year);
+    d3.select(`#line-${sc}`).attr('d', globalLineGen(d));
+  }
+
+  updateDecMark();
+
+  // Draw regional anomaly lines + dots
+  const regLineGen = d3.line()
+    .x(d => xSc(d.decade))
+    .y(d => ySc(d.delta))
+    .curve(d3.curveMonotoneX);
+
+  for (const sc of scList) {
+    const pts = regAnomalies[sc];
+    if (!pts || !pts.length) continue;
+
+    rg.append('path').datum(pts).attr('class','reg-line')
+      .attr('stroke', C[sc]).attr('d', regLineGen(pts));
+
+    rg.selectAll(`.rdot-${sc}`).data(pts).join('circle')
+      .attr('class', `reg-dot rdot-${sc}`)
+      .attr('cx', d => xSc(d.decade)).attr('cy', d => ySc(d.delta))
+      .attr('r', 5).attr('fill', C[sc]);
+
+    // Decade labels on dots
+    rg.selectAll(`.rdlbl-${sc}`).data(pts).join('text')
+      .attr('class', `rdlbl-${sc}`)
+      .attr('x', d => xSc(d.decade)).attr('y', d => ySc(d.delta) - 9)
+      .attr('text-anchor', 'middle').attr('fill', C[sc])
+      .attr('font-size', '9px')
+      .text(d => '+' + d.delta.toFixed(1) + '°C');
+  }
+}
+
+// ─── TS LEGEND ────────────────────────────────────────────────────────────────
+function buildTsLegend(anomaly = false) {
+  const globalLabel = anomaly ? 'global warming (Δ vs 2020)' : 'global mean (°C)';
+  const regLabel    = anomaly ? 'regional warming (Δ vs 2020) — 4 decades' : 'selected region — 4 decadal means';
+  document.getElementById('ts-legend').innerHTML = `
+    <div class="leg-item"><div class="leg-sw" style="background:var(--c245)"></div><span>${LAB.ssp245} — ${globalLabel}</span></div>
+    <div class="leg-item"><div class="leg-sw" style="background:var(--c585)"></div><span>${LAB.ssp585} — ${globalLabel}</span></div>
+    <div class="leg-item"><div class="leg-sw dash" style="border-color:var(--muted)"></div><span>${regLabel}</span></div>
+    <div class="leg-item"><div style="width:18px;border-top:2px dashed var(--csel)"></div><span>Selected decade</span></div>`;
+}
+
+// ─── TS HOVER ─────────────────────────────────────────────────────────────────
+const ts245 = () => tsData.filter(d => d.scenario==='ssp245').sort((a,b)=>a.year-b.year);
+const ts585 = () => tsData.filter(d => d.scenario==='ssp585').sort((a,b)=>a.year-b.year);
+const bisect = d3.bisector(d => d.year).center;
+
+function tsHover(event) {
+  if (!xSc || !tsData) return;
+  const [mx] = d3.pointer(event);
+  const year = Math.round(xSc.invert(mx));
+  const d245 = ts245(); const d585 = ts585();
+  const i = bisect(d245, year);
+  const p245 = d245[i]; const p585 = d585[i];
+  if (!p245) return;
+
+  d3.select('#ch').attr('x1',mx).attr('x2',mx).style('opacity',1);
+  const show = sc => S.scenario === 'both' || S.scenario === sc;
+
+  // In anomaly mode ySc expects delta from 2020; in absolute mode it expects raw tas
+  const anomaly = !!S.country;
+  const base245 = anomaly ? (tsData.find(d => d.scenario==='ssp245' && d.year===2020)?.tas ?? 0) : 0;
+  const base585 = anomaly ? (tsData.find(d => d.scenario==='ssp585' && d.year===2020)?.tas ?? 0) : 0;
+
+  if (show('ssp245')) d3.select('#hdot-ssp245').attr('cx',xSc(p245.year)).attr('cy',ySc(p245.tas - base245)).style('opacity',1);
+  if (show('ssp585')) d3.select('#hdot-ssp585').attr('cx',xSc(p585.year)).attr('cy',ySc(p585.tas - base585)).style('opacity',1);
+
+  const fmt = (val, base) => anomaly
+    ? (val - base >= 0 ? '+' : '') + (val - base).toFixed(2) + '°C vs 2020'
+    : val.toFixed(2) + '°C';
+
+  const tt = document.getElementById('tooltip');
+  tt.innerHTML = `<div class="tt-hd">${p245.year}</div>
+    ${show('ssp245') ? `<div class="tt-row" style="color:var(--c245)">SSP2-4.5: <span>${fmt(p245.tas, base245)}</span></div>` : ''}
+    ${show('ssp585') ? `<div class="tt-row" style="color:var(--c585)">SSP5-8.5: <span>${fmt(p585.tas, base585)}</span></div>` : ''}`;
+  tt.classList.add('show');
+  tt.style.left = (event.clientX + 14) + 'px';
+  tt.style.top  = (event.clientY - 10) + 'px';
+}
+function tsLeave() {
+  d3.select('#ch').style('opacity',0);
+  d3.selectAll('.hover-dot').style('opacity',0);
+  document.getElementById('tooltip').classList.remove('show');
+}
+
+// ─── MAP INTERACTIONS ─────────────────────────────────────────────────────────
+function mapHover(event, d) {
+  const name = cName(d.id);
+  // Sample temperature at country centroid
+  const [clon, clat] = d3.geoCentroid(d);
+  const latStep = latVals[1] - latVals[0];
+  const lonStep = lonVals[1] - lonVals[0];
+  const lon360 = clon < 0 ? clon + 360 : clon;
+  const li = Math.max(0, Math.min(nLat-1, Math.round((clat - latVals[0]) / latStep)));
+  const lo = Math.max(0, Math.min(nLon-1, Math.round((lon360 - lonVals[0]) / lonStep)));
+  const gi = li * nLon + lo;
+
+  const temps = [];
+  const scList = S.scenario === 'both' ? SCENS : [S.scenario];
+  for (const sc of scList) { const t = tempGrids[sc][S.di][gi]; if (!isNaN(t)) temps.push(t); }
+  const tempStr = temps.length ? (temps.reduce((a,b)=>a+b)/temps.length).toFixed(1)+'°C' : '—';
+
+  const tt = document.getElementById('tooltip');
+  tt.innerHTML = `<div class="tt-hd">${name}</div>
+    <div class="tt-row">Decade: <span>${DECADES[S.di]}s</span></div>
+    <div class="tt-row">Temp (centroid): <span>${tempStr}</span></div>
+    <div class="tt-row" style="color:var(--csel);font-size:0.68rem;margin-top:4px">Click to see regional trend →</div>`;
+  tt.classList.add('show');
+  tt.style.left = (event.clientX + 14) + 'px';
+  tt.style.top  = (event.clientY - 10) + 'px';
+}
+function mapLeave() { document.getElementById('tooltip').classList.remove('show'); }
+
+function mapClick(event, d) {
+  S.country = d;
+  S.countryName = cName(d.id);
+  d3.selectAll('.country').classed('sel', dd => dd.id === d.id);
+  document.getElementById('sel-info').style.display = 'flex';
+  document.getElementById('sel-name').textContent = S.countryName;
+  document.getElementById('ts-hd').textContent = `${S.countryName} — Regional Temperature Trend`;
+  updateRegOverlay();
+}
+
+// ─── CONTROLS ─────────────────────────────────────────────────────────────────
+function setScenario(sc) {
+  S.scenario = sc;
+  document.getElementById('btn-245').className = 'btn-245' + (sc==='ssp245' ? ' on' : '');
+  document.getElementById('btn-585').className = 'btn-585' + (sc==='ssp585' ? ' on' : '');
+  document.getElementById('btn-both').className = 'btn-both' + (sc==='both' ? ' on' : '');
+  renderCanvas();
+  updateTS();
+}
+
+function clearSel() {
+  S.country = null; S.countryName = null;
+  d3.selectAll('.country').classed('sel', false);
+  document.getElementById('sel-info').style.display = 'none';
+  document.getElementById('ts-hd').textContent = 'Global Mean Temperature';
+  restoreAbsoluteMode();
+  updateRegOverlay(); // clears reg-g since S.country is null
+}
+
+function restoreAbsoluteMode() {
+  const allTas = tsData.map(d => d.tas);
+  ySc = d3.scaleLinear().domain([d3.min(allTas)-0.3, d3.max(allTas)+0.5]).range([tsInnerH,0]);
+  d3.select('#y-ax').call(d3.axisLeft(ySc).ticks(6).tickFormat(d => d.toFixed(1)+'°C'));
+  d3.select('#ts-g').select('.ax-label-y').text('Surface Temp (°C)');
+  const lineGen = d3.line().x(d => xSc(d.year)).y(d => ySc(d.tas)).curve(d3.curveCatmullRom.alpha(0.5));
+  for (const sc of SCENS) {
+    const d = tsData.filter(r => r.scenario === sc).sort((a,b) => a.year - b.year);
+    d3.select(`#line-${sc}`).attr('d', lineGen(d));
+  }
+  updateDecMark();
+}
+
+window.setScenario = setScenario;
+window.clearSel    = clearSel;
+
+// Reinitialize on resize (data already loaded — just recalc layout)
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (!tempGrids) return; // not loaded yet
+    initSizes();
+    initMap();
+    initTS();
+    renderCanvas();
+    updateTS();
+    drawLegend();
+  }, 250);
+});
+</script>
+</body>
+</html>
