@@ -650,8 +650,9 @@ function updateRegOverlay() {
       .attr('x', d => xSc(d.decade)).attr('y', d => ySc(d.delta) - 9)
       .attr('text-anchor', 'middle').attr('fill', C[sc])
       .attr('font-size', '9px')
-      .text(d => '+' + d.delta.toFixed(1) + '°C');
+      .text(d => (d.delta >= 0 ? '+' : '') + d.delta.toFixed(1) + '°C');
   }
+  buildTsLegend(true);
 }
 
 // ─── TS LEGEND ────────────────────────────────────────────────────────────────
@@ -776,6 +777,7 @@ function restoreAbsoluteMode() {
     d3.select(`#line-${sc}`).attr('d', lineGen(d));
   }
   updateDecMark();
+  buildTsLegend(false);
 }
 
 window.setScenario = setScenario;
