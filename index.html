@@ -535,15 +535,17 @@ function updateRegOverlay() {
   rg.selectAll('*').remove();
   if (!S.country) return;
 
-  // Gather grid cells inside selected country (bounding box pre-filter + geoContains)
+  // Gather grid cells inside selected country
   const feat = S.country;
   const [[minLon, minLat],[maxLon, maxLat]] = d3.geoBounds(feat);
   const latStep = latVals[1] - latVals[0];
   const lonStep = lonVals[1] - lonVals[0];
-
   const scList = S.scenario === 'both' ? SCENS : [S.scenario];
   const cellMeans = {};
   for (const sc of scList) cellMeans[sc] = DECADES.map(() => ({ sum:0, n:0 }));
+
+  // Handle antimeridian-crossing countries (e.g. Russia): maxLon < minLon
+  const crossesAntimeridian = maxLon < minLon;
 
   for (let li = 0; li < nLat; li++) {
     const lat = latVals[li];
@@ -551,7 +553,12 @@ function updateRegOverlay() {
     for (let lo = 0; lo < nLon; lo++) {
       const lon360 = lonVals[lo];
       const lon = lon360 > 180 ? lon360 - 360 : lon360;
-      if (lon < minLon - lonStep || lon > maxLon + lonStep) continue;
+      if (crossesAntimeridian) {
+        // lon must be >= minLon OR <= maxLon
+        if (lon < minLon - lonStep && lon > maxLon + lonStep) continue;
+      } else {
+        if (lon < minLon - lonStep || lon > maxLon + lonStep) continue;
+      }
       if (!d3.geoContains(feat, [lon, lat])) continue;
       const gi = li * nLon + lo;
       for (const sc of scList) {
@@ -563,95 +570,119 @@ function updateRegOverlay() {
     }
   }
 
-  // Check we have data
-  const hasData = scList.some(sc => cellMeans[sc][0].n > 0);
-  if (!hasData) return;
+  if (!scList.some(sc => cellMeans[sc][0].n > 0)) return;
 
-  // ── ANOMALY MODE ──────────────────────────────────────────────────────────
-  // Regional baseline: decade 0 (2020s) mean per scenario
-  const regBase = {};
-  for (const sc of scList) {
-    const m = cellMeans[sc][0];
-    regBase[sc] = m.n > 0 ? m.sum / m.n : null;
-  }
-
-  // Global baseline: year 2020 value per scenario (anchor for global lines)
+  // ── RELATIVE MODE: regional warming MINUS global warming ──────────────────
+  // Global warming at each decade = tsData[decade_year] - tsData[2020]
   const globalBase = {};
+  const globalAtDecade = {}; // global warming by each decade
   for (const sc of SCENS) {
-    const row = tsData.find(d => d.scenario === sc && d.year === 2020);
-    globalBase[sc] = row ? row.tas : 0;
+    const base = tsData.find(d => d.scenario === sc && d.year === 2020)?.tas ?? 0;
+    globalBase[sc] = base;
+    globalAtDecade[sc] = DECADES.map(dec => {
+      const row = tsData.find(d => d.scenario === sc && d.year === dec);
+      return row ? row.tas - base : 0;
+    });
   }
 
-  // Regional anomalies (Δ°C from 2020 baseline)
-  const regAnomalies = {};
+  // Regional warming at each decade = regional_mean[decade] - regional_mean[2020]
+  // Relative = regional_warming - global_warming  →  how much faster/slower
+  const relPts = {};
   for (const sc of scList) {
-    if (regBase[sc] == null) continue;
-    regAnomalies[sc] = DECADES.map((dec, di) => {
+    const base0 = cellMeans[sc][0];
+    if (base0.n === 0) continue;
+    const regBase = base0.sum / base0.n;
+    relPts[sc] = DECADES.map((dec, di) => {
       const m = cellMeans[sc][di];
-      return m.n > 0 ? { decade: dec, delta: (m.sum / m.n) - regBase[sc] } : null;
+      if (m.n === 0) return null;
+      const regWarm = (m.sum / m.n) - regBase;
+      const relVal  = regWarm - globalAtDecade[sc][di];
+      return { decade: dec, rel: relVal, regWarm, globWarm: globalAtDecade[sc][di] };
     }).filter(Boolean);
   }
 
-  // Global anomaly range
-  const globalAnomalyVals = tsData.map(d => d.tas - (globalBase[d.scenario] ?? 0));
-  // Regional anomaly range
-  const regAnomalyVals = Object.values(regAnomalies).flat().map(d => d.delta);
-  const allAnomalies = [...globalAnomalyVals, ...regAnomalyVals];
+  const allRel = Object.values(relPts).flat().map(d => d.rel);
+  if (!allRel.length) return;
 
-  // New y-scale: anomaly (°C since 2020)
-  ySc = d3.scaleLinear()
-    .domain([Math.min(0, d3.min(allAnomalies)) - 0.2, d3.max(allAnomalies) + 0.3])
-    .range([tsInnerH, 0]);
+  // Y-scale centred around 0: "°C faster than global average"
+  const yPad = 0.4;
+  const yMin = Math.min(-0.3, d3.min(allRel)) - yPad;
+  const yMax = Math.max(0.3,  d3.max(allRel)) + yPad;
+  ySc = d3.scaleLinear().domain([yMin, yMax]).range([tsInnerH, 0]);
 
-  // Update y-axis + label
-  d3.select('#y-ax').call(d3.axisLeft(ySc).ticks(6).tickFormat(d => (d >= 0 ? '+' : '') + d.toFixed(1) + '°C'));
-  d3.select('#ts-g').select('.ax-label-y').text('Warming since 2020s (°C)');
+  // Y-axis
+  d3.select('#y-ax').call(d3.axisLeft(ySc).ticks(6)
+    .tickFormat(d => (d > 0 ? '+' : '') + d.toFixed(1) + '°C'));
+  d3.select('#ts-g').select('.ax-label-y').text('Faster / slower than global avg (°C)');
 
-  // Zero reference line
-  rg.append('line').attr('class','zero-ref')
+  // Hide global lines in relative mode — zero line + shading communicate the reference
+  d3.select('#line-ssp245').style('opacity', 0);
+  d3.select('#line-ssp585').style('opacity', 0);
+
+  // Shade faster (above 0) and slower (below 0) zones
+  const zeroY = ySc(0);
+  rg.append('rect')
+    .attr('x', 0).attr('width', tsInnerW)
+    .attr('y', 0).attr('height', zeroY)
+    .attr('fill', 'rgba(247,129,102,0.06)');
+  rg.append('rect')
+    .attr('x', 0).attr('width', tsInnerW)
+    .attr('y', zeroY).attr('height', tsInnerH - zeroY)
+    .attr('fill', 'rgba(88,166,255,0.06)');
+
+  // Zero line + label
+  rg.append('line')
     .attr('x1', 0).attr('x2', tsInnerW)
-    .attr('y1', ySc(0)).attr('y2', ySc(0))
-    .attr('stroke', 'rgba(255,255,255,0.2)').attr('stroke-width', 1)
-    .attr('stroke-dasharray', '3,3');
+    .attr('y1', zeroY).attr('y2', zeroY)
+    .attr('stroke', 'rgba(255,255,255,0.35)').attr('stroke-width', 1.5);
+  rg.append('text')
+    .attr('x', tsInnerW - 4).attr('y', zeroY - 5)
+    .attr('text-anchor', 'end').attr('fill', 'rgba(255,255,255,0.4)')
+    .attr('font-size', '9px').text('= global average');
 
-  // Redraw global lines as anomalies
-  const globalLineGen = d3.line()
-    .x(d => xSc(d.year))
-    .y(d => ySc(d.tas - globalBase[d.scenario]))
-    .curve(d3.curveCatmullRom.alpha(0.5));
-  for (const sc of SCENS) {
-    const d = tsData.filter(r => r.scenario === sc).sort((a,b) => a.year - b.year);
-    d3.select(`#line-${sc}`).attr('d', globalLineGen(d));
-  }
+  // Zone labels
+  rg.append('text').attr('x', 6).attr('y', 16)
+    .attr('fill', 'rgba(247,129,102,0.55)').attr('font-size', '9px').text('▲ warming faster than world');
+  rg.append('text').attr('x', 6).attr('y', tsInnerH - 6)
+    .attr('fill', 'rgba(88,166,255,0.55)').attr('font-size', '9px').text('▼ warming slower than world');
+
+  // Global warming context note (bottom annotation)
+  const g245end = globalAtDecade['ssp245'][3].toFixed(1);
+  const g585end = globalAtDecade['ssp585'][3].toFixed(1);
+  rg.append('text')
+    .attr('x', tsInnerW / 2).attr('y', tsInnerH + 34)
+    .attr('text-anchor', 'middle').attr('fill', 'var(--muted)')
+    .attr('font-size', '9px')
+    .text(`Global warms +${g245end}°C (SSP2-4.5) / +${g585end}°C (SSP5-8.5) by 2080s from 2020`);
 
   updateDecMark();
 
-  // Draw regional anomaly lines + dots
+  // Draw relative lines + dots
   const regLineGen = d3.line()
-    .x(d => xSc(d.decade))
-    .y(d => ySc(d.delta))
-    .curve(d3.curveMonotoneX);
+    .x(d => xSc(d.decade)).y(d => ySc(d.rel)).curve(d3.curveMonotoneX);
 
   for (const sc of scList) {
-    const pts = regAnomalies[sc];
-    if (!pts || !pts.length) continue;
+    const pts = relPts[sc];
+    if (!pts?.length) continue;
 
     rg.append('path').datum(pts).attr('class','reg-line')
-      .attr('stroke', C[sc]).attr('d', regLineGen(pts));
+      .attr('stroke', C[sc]).attr('stroke-width', 2.5).attr('d', regLineGen(pts));
 
     rg.selectAll(`.rdot-${sc}`).data(pts).join('circle')
       .attr('class', `reg-dot rdot-${sc}`)
-      .attr('cx', d => xSc(d.decade)).attr('cy', d => ySc(d.delta))
-      .attr('r', 5).attr('fill', C[sc]);
+      .attr('cx', d => xSc(d.decade)).attr('cy', d => ySc(d.rel))
+      .attr('r', 6).attr('fill', C[sc]).attr('stroke', 'var(--bg)').attr('stroke-width', 1.5);
 
-    // Decade labels on dots
+    // Value labels on dots
     rg.selectAll(`.rdlbl-${sc}`).data(pts).join('text')
       .attr('class', `rdlbl-${sc}`)
-      .attr('x', d => xSc(d.decade)).attr('y', d => ySc(d.delta) - 9)
+      .attr('x', d => xSc(d.decade))
+      .attr('y', d => ySc(d.rel) + (d.rel >= 0 ? -10 : 18))
       .attr('text-anchor', 'middle').attr('fill', C[sc])
-      .attr('font-size', '9px')
-      .text(d => (d.delta >= 0 ? '+' : '') + d.delta.toFixed(1) + '°C');
+      .attr('font-size', '9px').attr('font-weight', '600')
+      .text(d => (d.rel >= 0 ? '+' : '') + d.rel.toFixed(2) + '°C');
   }
+
   buildTsLegend(true);
 }
 
@@ -771,6 +802,8 @@ function restoreAbsoluteMode() {
   ySc = d3.scaleLinear().domain([d3.min(allTas)-0.3, d3.max(allTas)+0.5]).range([tsInnerH,0]);
   d3.select('#y-ax').call(d3.axisLeft(ySc).ticks(6).tickFormat(d => d.toFixed(1)+'°C'));
   d3.select('#ts-g').select('.ax-label-y').text('Surface Temp (°C)');
+  d3.select('#line-ssp245').style('opacity', null);
+  d3.select('#line-ssp585').style('opacity', null);
   const lineGen = d3.line().x(d => xSc(d.year)).y(d => ySc(d.tas)).curve(d3.curveCatmullRom.alpha(0.5));
   for (const sc of SCENS) {
     const d = tsData.filter(r => r.scenario === sc).sort((a,b) => a.year - b.year);
