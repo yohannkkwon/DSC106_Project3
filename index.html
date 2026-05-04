@@ -47,6 +47,20 @@ header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
 .btn-585.on { background: rgba(247,129,102,0.18); border-color: var(--c585); color: var(--c585); }
 .btn-both.on { background: rgba(255,215,0,0.15); border-color: var(--csel); color: var(--csel); }
 #decade-slider { width: 170px; accent-color: var(--csel); }
+#play-btn {
+  padding: 4px 13px; border: 1px solid var(--border); background: transparent;
+  color: var(--text); border-radius: 5px; cursor: pointer; font-size: 0.78rem;
+  transition: all 0.15s; min-width: 76px;
+}
+#play-btn:hover { background: rgba(255,255,255,0.06); }
+#play-btn.playing { background: rgba(255,215,0,0.15); border-color: var(--csel); color: var(--csel); }
+.speed-btn {
+  padding: 4px 9px; border: 1px solid var(--border); background: transparent;
+  color: var(--muted); border-radius: 5px; cursor: pointer; font-size: 0.72rem;
+  transition: all 0.15s;
+}
+.speed-btn:hover { background: rgba(255,255,255,0.06); }
+.speed-btn.on { background: rgba(255,215,0,0.12); border-color: var(--csel); color: var(--csel); }
 #ssp-info { padding: 8px 0 0; display: flex; flex-direction: column; gap: 3px; }
 .ssp-def { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
 .tick-row { display: flex; justify-content: space-between; width: 170px;
@@ -143,6 +157,17 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72
     <div class="ctrl-label">Decade: <span id="decade-val">2020</span></div>
     <input type="range" id="decade-slider" min="2020" max="2080" step="1" value="2020">
     <div class="tick-row"><span>2020</span><span>2040</span><span>2060</span><span>2080</span></div>
+  </div>
+  <div>
+    <div class="ctrl-label">Playback</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button id="play-btn" onclick="togglePlay()">&#9654; Play</button>
+      <div class="btn-group">
+        <button class="speed-btn on" id="spd-slow" onclick="setSpeed('slow')">Slow</button>
+        <button class="speed-btn" id="spd-med" onclick="setSpeed('med')">Med</button>
+        <button class="speed-btn" id="spd-fast" onclick="setSpeed('fast')">Fast</button>
+      </div>
+    </div>
   </div>
   <div id="sel-info">
     <div class="ctrl-label">Region:</div>
@@ -828,6 +853,50 @@ function restoreAbsoluteMode() {
 
 window.setScenario = setScenario;
 window.clearSel    = clearSel;
+
+// ─── ANIMATION ────────────────────────────────────────────────────────────────
+const SPEEDS = { slow: 130, med: 55, fast: 18 }; // ms per year step
+let animTimer = null;
+let animSpeed = 'slow';
+
+function setSpeed(s) {
+  animSpeed = s;
+  ['slow','med','fast'].forEach(k =>
+    document.getElementById(`spd-${k}`).classList.toggle('on', k === s));
+  if (animTimer) { clearInterval(animTimer); _startTimer(); }
+}
+
+function _startTimer() {
+  animTimer = setInterval(() => {
+    const next = S.year + 1;
+    if (next > 2080) { _stopAnim(); return; }
+    const sl = document.getElementById('decade-slider');
+    sl.value = next;
+    sl.dispatchEvent(new Event('input'));
+  }, SPEEDS[animSpeed]);
+}
+
+function _stopAnim() {
+  clearInterval(animTimer); animTimer = null;
+  const btn = document.getElementById('play-btn');
+  btn.innerHTML = '&#9654; Play';
+  btn.classList.remove('playing');
+}
+
+function togglePlay() {
+  if (animTimer) { _stopAnim(); return; }
+  if (S.year >= 2080) {
+    const sl = document.getElementById('decade-slider');
+    sl.value = 2020; sl.dispatchEvent(new Event('input'));
+  }
+  const btn = document.getElementById('play-btn');
+  btn.innerHTML = '&#9646;&#9646; Pause';
+  btn.classList.add('playing');
+  _startTimer();
+}
+
+window.togglePlay = togglePlay;
+window.setSpeed   = setSpeed;
 
 // Reinitialize on resize (data already loaded — just recalc layout)
 let resizeTimer;
