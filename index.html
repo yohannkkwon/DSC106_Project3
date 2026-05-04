@@ -204,6 +204,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72
 
 <div id="tooltip"></div>
 
+<!--
 <section id="writeup">
   <h2>Visualization Write-Up</h2>
 
@@ -236,6 +237,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72
   </ul>
   <p>The most time-consuming aspect was the canvas raster rendering — specifically converting the climate model's 0–360° longitude convention to the −180–180° convention expected by D3's projections, and achieving smooth performance with 55,000+ grid cells per frame by using pre-computed projected positions and a pixel-level color LUT.</p>
 </section>
+-->
 
 <footer>DSC 106 Project 3 &nbsp;·&nbsp; CMIP6 Climate Data &nbsp;·&nbsp; UC San Diego</footer>
 
@@ -442,6 +444,10 @@ function renderCanvas() {
 
   const halfX = 2, halfY = 2;
   const lerp = (a, b) => isNaN(a) ? b : isNaN(b) ? a : a + alpha * (b - a);
+  // Pre-fetch 2020 baseline grids for color amplification
+  const base245 = tempGrids['ssp245'][0];
+  const base585 = tempGrids['ssp585'][0];
+  const AMPLIFY = 3; // 1°C real change appears as 3°C on the color scale
 
   for (let li = 0; li < nLat; li++) {
     for (let lo = 0; lo < nLon; lo++) {
@@ -459,6 +465,18 @@ function renderCanvas() {
         temp = (!isNaN(t245) && !isNaN(t585)) ? (t245 + t585) * 0.5 : (isNaN(t245) ? t585 : t245);
       }
       if (isNaN(temp)) continue;
+
+      // Amplify color change relative to 2020 baseline so warming is visible
+      if (yr !== 2020) {
+        let t0;
+        if (S.scenario === 'ssp245') t0 = base245[gi];
+        else if (S.scenario === 'ssp585') t0 = base585[gi];
+        else {
+          const b2 = base245[gi], b5 = base585[gi];
+          t0 = (!isNaN(b2) && !isNaN(b5)) ? (b2 + b5) * 0.5 : (isNaN(b2) ? b5 : b2);
+        }
+        if (!isNaN(t0)) temp = t0 + (temp - t0) * AMPLIFY;
+      }
 
       const ci = tIdx(temp);
       const r = LUT_R[ci], g = LUT_G[ci], b = LUT_B[ci];
