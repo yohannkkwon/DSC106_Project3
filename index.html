@@ -81,8 +81,8 @@ header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
 #map-wrap { position: relative; flex: 1; }
 #map-canvas, #map-svg { position: absolute; top: 0; left: 0; }
 #map-svg { overflow: visible; }
-.country { fill: transparent; stroke: rgba(255,255,255,0.14); stroke-width: 0.5px; cursor: pointer; }
-.country:hover { stroke: rgba(255,255,255,0.45); stroke-width: 0.9px; }
+.country { fill: transparent; stroke: rgba(0,0,0,0.55); stroke-width: 0.6px; cursor: pointer; }
+.country:hover { stroke: rgba(0,0,0,0.85); stroke-width: 1.1px; }
 .country.sel { stroke: var(--csel); stroke-width: 2px; }
 .graticule { fill: none; stroke: rgba(255,255,255,0.04); stroke-width: 0.5px; }
 .sphere { fill: none; stroke: #2a3a4a; stroke-width: 1px; }
@@ -93,7 +93,7 @@ header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
 /* TIME SERIES */
 #ts-panel { flex: 1; display: flex; flex-direction: column; padding: 12px 36px 8px 16px; }
 #ts-panel .panel-hd { transition: color 0.2s; }
-#ts-svg { width: 100%; }
+#ts-svg { width: 100%; overflow: visible; }
 .grid line { stroke: rgba(255,255,255,0.05); }
 .grid path { display: none; }
 .axis text { fill: var(--muted); font-size: 10px; }
@@ -260,7 +260,7 @@ let countryFeats, projection, geoPath;
 let mapW, mapH, tsW, tsH;
 let xSc, ySc, tsInnerH, tsInnerW;
 
-const tsM = { t: 30, r: 18, b: 45, l: 56 };
+const tsM = { t: 30, r: 28, b: 45, l: 56 };
 
 // ─── COLOR LUT ───────────────────────────────────────────────────────────────
 const LUT_N = 512;
@@ -572,7 +572,7 @@ function updateDecMark() {
   d3.select('#dec-mark').attr('x1',x).attr('x2',x);
   d3.select('#ts-g').select('.dec-label').remove();
   d3.select('#ts-g').append('text').attr('class','dec-label ax-label')
-    .attr('x', x+3).attr('y', 14).attr('fill','var(--csel)').attr('font-size','9px')
+    .attr('x', x+3).attr('y', tsInnerH - 6).attr('fill','var(--csel)').attr('font-size','9px')
     .text(S.year);
 }
 
@@ -695,10 +695,10 @@ function updateRegOverlay() {
     .attr('font-size', '9px').text('= global average');
 
   // Zone labels
-  rg.append('text').attr('x', 6).attr('y', 26)
-    .attr('fill', 'rgba(247,129,102,0.55)').attr('font-size', '9px').text('▲ warming faster than world');
-  rg.append('text').attr('x', 6).attr('y', tsInnerH - 6)
-    .attr('fill', 'rgba(88,166,255,0.55)').attr('font-size', '9px').text('▼ warming slower than world');
+  rg.append('text').attr('x', tsInnerW - 6).attr('y', 14)
+    .attr('text-anchor', 'end').attr('fill', 'rgba(247,129,102,0.55)').attr('font-size', '9px').text('▲ warming faster than world');
+  rg.append('text').attr('x', tsInnerW - 6).attr('y', tsInnerH - 6)
+    .attr('text-anchor', 'end').attr('fill', 'rgba(88,166,255,0.55)').attr('font-size', '9px').text('▼ warming slower than world');
 
   // Global warming context note (bottom annotation)
   const g245end = globalAtDecade['ssp245'][3].toFixed(1);
