@@ -754,11 +754,21 @@ function drawRegLines(rg, relPts, scList, primary, countryLabel) {
       .attr('fill', primary ? C[sc] : 'var(--bg)')
       .attr('stroke', C[sc]).attr('stroke-width', primary ? 1.5 : 2);
 
-    // Temperature labels above/below dots (skip 2020 anchor)
+    // Temperature labels — when comparing two countries, split horizontally:
+    //   primary   → right-aligned, ending just left of the dot  (extends leftward)
+    //   comparison → left-aligned, starting just right of the dot (extends rightward)
+    // This guarantees no overlap even when both values are nearly identical.
+    // In single-country mode keep the traditional centered above/below placement.
+    const comparing = !!S.country2;
+    const anchor  = comparing ? (primary ? 'end'  : 'start') : 'middle';
+    const xNudge  = comparing ? (primary ? -4     : 4)       : 0;
+    // Vertical: both countries use same rule — above positive, below negative
+    const yOff = (rel) => rel >= 0 ? -11 : 21;
+
     rg.selectAll(`.rdlbl${sfx}-${sc}`).data(pts.filter(d => d.decade !== 2020)).join('text')
-      .attr('x', d => xSc(d.decade))
-      .attr('y', d => ySc(d.rel) + (primary ? (d.rel >= 0 ? -10 : 18) : (d.rel >= 0 ? 18 : -10)))
-      .attr('text-anchor', 'middle').attr('fill', C[sc])
+      .attr('x', d => xSc(d.decade) + xNudge)
+      .attr('y', d => ySc(d.rel) + yOff(d.rel))
+      .attr('text-anchor', anchor).attr('fill', C[sc])
       .attr('font-size', '9px').attr('font-weight', '600').attr('opacity', primary ? 1 : 0.85)
       .style('paint-order', 'stroke').style('stroke', 'var(--bg)').style('stroke-width', '3px')
       .text(d => (d.rel >= 0 ? '+' : '') + d.rel.toFixed(2) + '°C');
