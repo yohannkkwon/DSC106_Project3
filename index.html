@@ -61,15 +61,57 @@ header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
 }
 .speed-btn:hover { background: rgba(255,255,255,0.06); }
 .speed-btn.on { background: rgba(255,215,0,0.12); border-color: var(--csel); color: var(--csel); }
-#ssp-info { padding: 8px 0 0; display: flex; flex-direction: column; gap: 3px; }
+#ssp-info { padding: 10px 0 0; display: flex; flex-direction: column; gap: 5px; }
+.ssp-head { font-size: 0.72rem; color: var(--text); font-weight: 600; margin-bottom: 2px; }
+.ssp-spectrum {
+  display: flex; gap: 3px; align-items: stretch; margin: 4px 0;
+}
+.ssp-tier {
+  flex: 1; text-align: center; padding: 4px 3px; border-radius: 4px;
+  border: 1px solid var(--border); font-size: 0.62rem; color: var(--muted);
+  line-height: 1.3; background: rgba(255,255,255,0.02);
+}
+.ssp-tier b { display: block; font-size: 0.7rem; margin-bottom: 1px; }
+.ssp-tier.hi245 { border-color: var(--c245); background: rgba(88,166,255,0.1); color: var(--c245); }
+.ssp-tier.hi585 { border-color: var(--c585); background: rgba(247,129,102,0.1); color: var(--c585); }
 .ssp-def { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
+.ssp-note { font-size: 0.67rem; color: var(--muted); opacity: 0.75; font-style: italic; }
+/* Suggested comparison presets */
+#compare-presets { display: flex; gap: 4px; flex-wrap: wrap; }
+.preset-btn {
+  padding: 4px 10px; border: 1px solid var(--border); background: transparent;
+  color: var(--muted); border-radius: 5px; cursor: pointer; font-size: 0.72rem;
+  transition: all 0.15s; white-space: nowrap;
+}
+.preset-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); border-color: rgba(255,255,255,0.25); }
 .tick-row { display: flex; justify-content: space-between; width: 170px;
   font-size: 0.67rem; color: var(--muted); margin-top: 1px; }
 #decade-val { font-size: 0.9rem; font-weight: 600; color: var(--csel); min-width: 36px; }
-#sel-info { display: none; align-items: center; gap: 8px; }
+#sel-info { display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
 #sel-name { font-size: 0.82rem; color: var(--csel); }
+#sel-name2 { font-size: 0.82rem; color: #00bcd4; }
 .clear-btn { padding: 3px 7px; border: 1px solid var(--border); background: transparent;
   color: var(--muted); border-radius: 4px; cursor: pointer; font-size: 0.72rem; }
+.rank-badge { font-size: 0.68rem; background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3);
+  color: var(--csel); border-radius: 10px; padding: 2px 7px; white-space: nowrap; }
+.rank-badge2 { font-size: 0.68rem; background: rgba(0,188,212,0.12); border: 1px solid rgba(0,188,212,0.3);
+  color: #00bcd4; border-radius: 10px; padding: 2px 7px; white-space: nowrap; }
+.country.sel2 { stroke: #00bcd4; stroke-width: 2px; }
+/* Search box */
+#search-wrap { position: relative; }
+#country-search {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  padding: 4px 10px; border-radius: 5px; font-size: 0.78rem; width: 155px; outline: none;
+  transition: border-color 0.15s;
+}
+#country-search:focus { border-color: var(--csel); }
+#search-drop {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 300;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  min-width: 190px; max-height: 220px; overflow-y: auto; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.search-item { padding: 6px 12px; cursor: pointer; font-size: 0.78rem; color: var(--text); }
+.search-item:hover { background: rgba(255,255,255,0.08); color: var(--csel); }
 
 #panels { display: flex; height: calc(100vh - 130px); min-height: 480px; }
 
@@ -109,6 +151,13 @@ header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
 .crosshair { stroke: rgba(255,255,255,0.25); stroke-width: 1px; pointer-events: none; opacity: 0; }
 .hover-dot { pointer-events: none; opacity: 0; }
 #ts-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+#country-key {
+  display: none; flex-direction: row; gap: 32px; align-items: center;
+  padding: 5px 2px 4px; flex-wrap: wrap;
+}
+.ck-item { display: flex; align-items: center; gap: 10px; }
+.ck-swatch { width: 32px; height: 0; border-radius: 2px; flex-shrink: 0; }
+.ck-label { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0.01em; }
 .leg-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: var(--muted); }
 .leg-sw { width: 18px; height: 3px; border-radius: 2px; }
 .leg-sw.dash { border-top: 2px dashed; height: 0; background: transparent !important; margin-top: 1px; }
@@ -169,10 +218,28 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72
       </div>
     </div>
   </div>
+  <div>
+    <div class="ctrl-label">Suggested Comparisons</div>
+    <div id="compare-presets">
+      <button class="preset-btn" onclick="setComparison('Russia','Canada')">🌨 Russia vs Canada</button>
+      <button class="preset-btn" onclick="setComparison('India','Nigeria')">🌡 India vs Nigeria</button>
+      <button class="preset-btn" onclick="setComparison('United States of America','China')">🏭 USA vs China</button>
+      <button class="preset-btn" onclick="setComparison('Brazil','Indonesia')">🌿 Brazil vs Indonesia</button>
+    </div>
+  </div>
+  <div>
+    <div class="ctrl-label">Find Country</div>
+    <div id="search-wrap">
+      <input type="text" id="country-search" placeholder="&#128269; Search..." autocomplete="off">
+      <div id="search-drop"></div>
+    </div>
+  </div>
   <div id="sel-info">
-    <div class="ctrl-label">Region:</div>
-    <span id="sel-name"></span>
-    <button class="clear-btn" onclick="clearSel()">✕ clear</button>
+    <div class="ctrl-label">Comparing:</div>
+    <span id="sel-name"></span><span id="rank-badge1" class="rank-badge" style="display:none"></span>
+    <span id="vs-sep" style="color:var(--muted);font-size:0.75rem;display:none">vs</span>
+    <span id="sel-name2" style="display:none"></span><span id="rank-badge2" class="rank-badge2" style="display:none"></span>
+    <button class="clear-btn" onclick="clearSel()">✕ clear all</button>
   </div>
 </div>
 
@@ -193,51 +260,79 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72
   <div id="ts-panel">
     <div class="panel-hd" id="ts-hd">Global Mean Temperature</div>
     <div class="panel-sub">2015–2100 · hover for values · click map country for regional overlay</div>
+    <div id="country-key"></div>
     <svg id="ts-svg"></svg>
     <div id="ts-legend"></div>
     <div id="ssp-info">
-      <span class="ssp-def"><b style="color:var(--c245)">SSP2-4.5</b> — Moderate emissions: partial climate policy, CO₂ stabilizes mid-century (~4.5 W/m² radiative forcing by 2100)</span>
-      <span class="ssp-def"><b style="color:var(--c585)">SSP5-8.5</b> — High emissions: fossil-fuel intensive, CO₂ roughly doubles by 2100 (~8.5 W/m² radiative forcing)</span>
+      <span class="ssp-head">SSP = Shared Socioeconomic Pathway &mdash; the IPCC AR6 framework for modeling future emissions. Five tiers, from aggressive climate action to unchecked fossil-fuel growth:</span>
+      <div class="ssp-spectrum">
+        <div class="ssp-tier"><b>SSP1</b>Very low<br><small>(Paris-aligned)</small></div>
+        <div class="ssp-tier hi245"><b>SSP2-4.5 ★</b>Moderate<br><small>(this viz)</small></div>
+        <div class="ssp-tier"><b>SSP3-7.0</b>High<br><small>(regional rivalry)</small></div>
+        <div class="ssp-tier"><b>SSP4</b>Uneven<br><small>(inequality)</small></div>
+        <div class="ssp-tier hi585"><b>SSP5-8.5 ★</b>Very high<br><small>(this viz)</small></div>
+      </div>
+      <span class="ssp-def"><b style="color:var(--c245)">SSP2-4.5</b> — "Middle of the road": partial climate policy, CO₂ peaks and stabilizes mid-century (~4.5 W/m² radiative forcing by 2100).</span>
+      <span class="ssp-def"><b style="color:var(--c585)">SSP5-8.5</b> — Fossil-fuel intensive, no effective global policy; CO₂ roughly doubles by 2100 (~8.5 W/m²) — the high-end worst-case baseline.</span>
+      <span class="ssp-note">★ SSP1 (very low / Paris-aligned) is not included in this CMIP6 dataset subset. SSP2 and SSP5 represent the practical range from moderate policy action to inaction.</span>
     </div>
   </div>
 </div>
 
 <div id="tooltip"></div>
 
-<!--
 <section id="writeup">
   <h2>Visualization Write-Up</h2>
 
   <h3>Research Question</h3>
-  <p>How does projected surface temperature change vary across the globe under different emission scenarios, and how do regional trends diverge over time? This question matters because different parts of the world face sharply different warming trajectories — the Arctic warms 2–4× faster than the global mean, and the gap between SSP2-4.5 and SSP5-8.5 compounds annually.</p>
+  <p>How does projected surface temperature change vary across the globe under different emission scenarios, and how do regional trends diverge over time? This question matters because different parts of the world face sharply different warming trajectories. Our EDA revealed that warming is deeply uneven: polar regions amplify 2–4× faster than the global mean, continental interiors heat faster than coastal zones, and densely populated regions like South Asia and the Sahel face disproportionate warming relative to their emissions. The gap between SSP2-4.5 and SSP5-8.5 compounds over decades, making the choice of emission pathway a critical variable for any region.</p>
+
+  <h3>Emission Scenarios Explained</h3>
+  <p><strong>SSP (Shared Socioeconomic Pathway)</strong> is the IPCC AR6 framework for modeling how human choices about energy, land use, and policy shape future greenhouse gas concentrations. Five numbered pathways exist — SSP1 through SSP5 — spanning a range from aggressive climate action to unchecked fossil-fuel growth:</p>
+  <ul>
+    <li><strong>SSP1-1.9 / SSP1-2.6 (Very low):</strong> Strong global cooperation, rapid decarbonization, consistent with limiting warming to 1.5–2°C. This pathway is <em>not included</em> in this dataset but represents the Paris Agreement target.</li>
+    <li><strong>SSP2-4.5 (Moderate — shown in blue):</strong> "Middle of the road" — partial climate policy, CO₂ emissions peak around mid-century and stabilize. Radiative forcing reaches ~4.5 W/m² by 2100, implying roughly +2.7°C of global warming above pre-industrial levels.</li>
+    <li><strong>SSP3-7.0 (High):</strong> Regional rivalry, fragmented policy, high land-use emissions. Not in this dataset.</li>
+    <li><strong>SSP5-8.5 (Very high — shown in red):</strong> Fossil-fuel intensive development with no effective climate policy; CO₂ roughly doubles by 2100. Radiative forcing reaches ~8.5 W/m², implying ~4.4°C of global warming — the worst-case baseline used in most headline risk assessments.</li>
+  </ul>
+  <p>This visualization focuses on SSP2 and SSP5 because they represent the practical range between moderate action and inaction — the two most policy-relevant bookends of the spectrum.</p>
+
+  <h3>Regional Warming Patterns</h3>
+  <p>Beyond the well-known polar amplification signal, our data reveals several other notable regional patterns worth exploring with the comparison tool:</p>
+  <ul>
+    <li><strong>Polar amplification (Russia, Canada, Greenland):</strong> Arctic land masses warm 2–4× faster than the global average by 2080 under SSP5-8.5, driven by sea-ice albedo loss and changes in atmospheric circulation. Russia ranks #1 among all countries in relative warming in our dataset.</li>
+    <li><strong>Continental interior drying (Central Asia, Sahel, inland Australia):</strong> These regions warm faster than nearby coastal areas because they lack the moderating effect of ocean heat absorption. Kazakhstan, Mongolia, and Sudan show above-average warming trends.</li>
+    <li><strong>Tropical amplification under high emissions (India, Nigeria, Brazil):</strong> While tropical regions warm more slowly in absolute terms than the poles, their baseline temperatures are already near human physiological limits. Even modest additional warming (+1–2°C) has outsized impacts on heat stress, agriculture, and monsoon patterns.</li>
+    <li><strong>Coastal moderation (Indonesia, New Zealand, United Kingdom):</strong> Ocean proximity buffers warming, causing these countries to track at or slightly below the global average — which can still be misleading since sea-level rise is the dominant climate risk for coastal nations.</li>
+    <li><strong>Major emitter comparison (USA vs China):</strong> These two countries are responsible for the majority of cumulative historical emissions, yet their projected warming trajectories are shaped by their geography as much as their emissions — comparing them illustrates how the same global forcing affects different climates differently.</li>
+  </ul>
 
   <h3>Design Rationale &amp; Encoding Choices</h3>
   <ul>
-    <li><strong>Natural Earth projection (map):</strong> Chosen for its area-preserving quality at mid-latitudes and familiar appearance. Mercator was rejected because it severely exaggerates polar regions, which are the areas of greatest warming — the opposite of what we want to emphasize.</li>
-    <li><strong>Diverging blue→red color scale (map):</strong> Centered at 0°C (freezing), this physically meaningful reference immediately conveys below-vs-above freezing. The palette matches the perceptual convention in climate science (blue = cold, red = hot). A sequential scale was rejected because it would hide the meaningful zero crossing.</li>
-    <li><strong>Canvas raster beneath SVG borders:</strong> Climate model output is gridded data, not country-level data. Rendering each grid cell directly (rather than aggregating to countries) preserves spatial fidelity and reveals sub-national gradients — e.g., the Tibetan Plateau vs. the Ganges plain within India, or continental vs. coastal gradients across Australia.</li>
-    <li><strong>Linked time series (right panel):</strong> Both SSP2-4.5 (blue) and SSP5-8.5 (red) global trajectories are shown simultaneously so the viewer can immediately perceive the divergence. Solid lines for the global mean; dashed lines for the selected country's 4 decadal values — the dash communicates that these are sparser, aggregated points rather than continuous yearly observations.</li>
-    <li><strong>Decade slider rather than animation:</strong> Gives the viewer direct control over the temporal comparison, enabling deliberate juxtaposition (e.g., 2020 vs. 2080) without the cognitive load of a looping animation.</li>
-    <li><strong>Crosshair + tooltip on time series:</strong> Details-on-demand — the chart is clean by default; exact temperatures surface only on hover.</li>
+    <li><strong>Natural Earth projection (map):</strong> Chosen for its area-preserving quality at mid-latitudes and familiar appearance. Mercator was rejected because it severely exaggerates polar regions — the very areas of greatest warming — creating a misleading visual emphasis.</li>
+    <li><strong>Diverging blue→red color scale (map):</strong> Centered at 0°C (freezing point), this physically meaningful anchor immediately conveys below-vs-above freezing. The palette matches the perceptual convention in climate science. A sequential scale was rejected because it would hide the meaningful zero crossing.</li>
+    <li><strong>Canvas raster beneath SVG borders:</strong> Climate model output is gridded data, not country-level data. Rendering each grid cell directly preserves spatial fidelity and reveals sub-national gradients — e.g., the Tibetan Plateau vs. the Ganges plain within India, or continental vs. coastal gradients across Australia.</li>
+    <li><strong>Relative anomaly chart (right panel):</strong> When a country is selected, the Y-axis switches from absolute temperature to warming relative to the global average (Δ vs 2020, minus global Δ). This makes it immediately clear whether a region is warming faster or slower than the world — the key comparative insight. The country comparison mode extends this to two countries simultaneously.</li>
+    <li><strong>Decade slider + play button:</strong> The slider gives direct control over the temporal comparison; the play button enables passive animation at three speeds for presentation contexts.</li>
+    <li><strong>Suggested comparisons presets:</strong> Four curated country pairs (Russia/Canada, India/Nigeria, USA/China, Brazil/Indonesia) guide the reader toward the most instructive regional contrasts, making the comparison feature immediately discoverable.</li>
   </ul>
-  <p>Alternatives considered: a country-level choropleth (rejected: masks within-country gradients and introduces MAUP artifacts); a difference map showing 2080−2020 anomaly (considered as a mode — the decade slider achieves the same insight through interaction); animated auto-play (too passive — the slider promotes active exploration).</p>
 
   <h3>Data Transformations</h3>
-  <p>The CMIP6 dataset was subsetted to Near-Surface Air Temperature (<em>tas</em>) for SSP2-4.5 and SSP5-8.5 scenarios, 2015–2100. The spatial file contains decadal means on a ~1.25° × 0.94° global grid; multiple ensemble members per cell are averaged to reduce model noise. The timeseries file contains global area-weighted annual means. No data values are excluded; the full temperature range (−52°C to +40°C) is preserved and clearly labeled.</p>
+  <p>The CMIP6 dataset was subsetted to Near-Surface Air Temperature (<em>tas</em>) for SSP2-4.5 and SSP5-8.5 scenarios, 2015–2100. The spatial file contains decadal means on a ~1.25° × 0.94° global grid (~55,000 cells); multiple ensemble members per cell are averaged to reduce model noise. The timeseries file contains global area-weighted annual means. Temperature is displayed in °C; the full spatial range (−52°C to +40°C) is preserved. Color amplification (3×) is applied relative to the 2020 baseline for map display only — tooltips and the chart always show true values.</p>
 
   <h3>Development Process</h3>
-  <p>This is an individual submission for DSC 106. Approximate time breakdown:</p>
+  <p>This is a group submission for DSC 106 (Nikitha Kerudi, Yohan Kwon, Kyle Duong). Approximate time breakdown:</p>
   <ul>
     <li>Data acquisition and Python preprocessing (xarray, pandas, Google Colab): ~3 hrs</li>
     <li>Exploratory analysis in matplotlib (6 static figures): ~2 hrs</li>
     <li>D3.js map: projection, canvas raster, SVG border overlay, coordinate transforms: ~7 hrs</li>
-    <li>Time series chart: axes, global lines, crosshair, regional overlay, dynamic Y-scale: ~4 hrs</li>
-    <li>Controls, cross-panel linking, tooltips, styling: ~3 hrs</li>
-    <li>Write-up: ~1 hr</li>
+    <li>Time series chart: axes, global lines, crosshair, relative anomaly mode, dynamic Y-scale: ~5 hrs</li>
+    <li>Controls, cross-panel linking, tooltips, play/pause animation, styling: ~4 hrs</li>
+    <li>Country comparison mode, rank badges, search box, suggested comparisons: ~4 hrs</li>
+    <li>Write-up: ~1.5 hrs</li>
   </ul>
-  <p>The most time-consuming aspect was the canvas raster rendering — specifically converting the climate model's 0–360° longitude convention to the −180–180° convention expected by D3's projections, and achieving smooth performance with 55,000+ grid cells per frame by using pre-computed projected positions and a pixel-level color LUT.</p>
+  <p>The most technically complex aspect was the smooth year-by-year map interpolation — linearly blending between four decadal temperature grids per frame using pre-computed projected pixel positions and a 512-entry color LUT, achieving real-time performance across 55,000+ grid cells.</p>
 </section>
--->
 
 <footer>DSC 106 Project 3 &nbsp;·&nbsp; CMIP6 Climate Data &nbsp;·&nbsp; UC San Diego</footer>
 
@@ -252,7 +347,7 @@ const LAB     = { ssp245: 'SSP2-4.5 (moderate)', ssp585: 'SSP5-8.5 (high)' };
 const TMIN = -52, TMAX = 40;
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
-const S = { scenario: 'both', year: 2020, country: null, countryName: null };
+const S = { scenario: 'both', year: 2020, country: null, countryName: null, country2: null, countryName2: null };
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 let tsData, latVals, lonVals, tempGrids, projPos, nLat, nLon;
@@ -260,7 +355,7 @@ let countryFeats, projection, geoPath;
 let mapW, mapH, tsW, tsH;
 let xSc, ySc, tsInnerH, tsInnerW;
 
-const tsM = { t: 30, r: 28, b: 45, l: 56 };
+const tsM = { t: 30, r: 28, b: 62, l: 56 };
 
 // ─── COLOR LUT ───────────────────────────────────────────────────────────────
 const LUT_N = 512;
@@ -370,6 +465,8 @@ Promise.all([
   });
 
   setScenario('both');
+  setTimeout(precomputeRankings, 100); // after first render
+  initSearch();
 }).catch(err => {
   document.getElementById('loading').innerHTML =
     `<p style="color:#f78166;padding:20px">Error: ${err.message}</p>`;
@@ -531,7 +628,7 @@ function initTS() {
 
   // Axis labels
   g.append('text').attr('class','ax-label').attr('text-anchor','middle')
-    .attr('x', tsInnerW/2).attr('y', tsInnerH + 40).text('Year');
+    .attr('x', tsInnerW/2).attr('y', tsInnerH + 38).text('Year');
   g.append('text').attr('class','ax-label ax-label-y').attr('text-anchor','middle')
     .attr('transform','rotate(-90)').attr('x', -tsInnerH/2).attr('y', -44)
     .text('Surface Temp (°C)');
@@ -583,174 +680,206 @@ function updateTS() {
   updateRegOverlay();
 }
 
-function updateRegOverlay() {
-  if (!xSc) return;
-  const rg = d3.select('#reg-g');
-  rg.selectAll('*').remove();
-  if (!S.country) return;
-
-  // Gather grid cells inside selected country
-  const feat = S.country;
+// ── Helper: gather grid-cell means for one country feature ───────────────────
+function cellMeansForFeat(feat) {
   const [[minLon, minLat],[maxLon, maxLat]] = d3.geoBounds(feat);
   const latStep = latVals[1] - latVals[0];
   const lonStep = lonVals[1] - lonVals[0];
   const scList = S.scenario === 'both' ? SCENS : [S.scenario];
-  const cellMeans = {};
-  for (const sc of scList) cellMeans[sc] = DECADES.map(() => ({ sum:0, n:0 }));
-
-  // Handle antimeridian-crossing countries (e.g. Russia): maxLon < minLon
-  const crossesAntimeridian = maxLon < minLon;
-
+  const cm = {};
+  for (const sc of scList) cm[sc] = DECADES.map(() => ({ sum:0, n:0 }));
+  const crossAM = maxLon < minLon;
   for (let li = 0; li < nLat; li++) {
     const lat = latVals[li];
     if (lat < minLat - latStep || lat > maxLat + latStep) continue;
     for (let lo = 0; lo < nLon; lo++) {
       const lon360 = lonVals[lo];
       const lon = lon360 > 180 ? lon360 - 360 : lon360;
-      if (crossesAntimeridian) {
-        // lon must be >= minLon OR <= maxLon
-        if (lon < minLon - lonStep && lon > maxLon + lonStep) continue;
-      } else {
-        if (lon < minLon - lonStep || lon > maxLon + lonStep) continue;
-      }
+      if (crossAM ? (lon < minLon - lonStep && lon > maxLon + lonStep)
+                  : (lon < minLon - lonStep || lon > maxLon + lonStep)) continue;
       if (!d3.geoContains(feat, [lon, lat])) continue;
       const gi = li * nLon + lo;
       for (const sc of scList) {
         for (let di = 0; di < 4; di++) {
           const t = tempGrids[sc][di][gi];
-          if (!isNaN(t)) { cellMeans[sc][di].sum += t; cellMeans[sc][di].n++; }
+          if (!isNaN(t)) { cm[sc][di].sum += t; cm[sc][di].n++; }
         }
       }
     }
   }
+  return cm;
+}
 
-  if (!scList.some(sc => cellMeans[sc][0].n > 0)) return;
+// ── Helper: compute relative-to-global warming points from cell means ─────────
+function relPtsFromCM(cm, globalAtDecade) {
+  const scList = S.scenario === 'both' ? SCENS : [S.scenario];
+  const pts = {};
+  for (const sc of scList) {
+    const b = cm[sc]?.[0];
+    if (!b || b.n === 0) continue;
+    const base = b.sum / b.n;
+    pts[sc] = DECADES.map((dec, di) => {
+      const m = cm[sc][di];
+      if (m.n === 0) return null;
+      const rel = (m.sum / m.n - base) - globalAtDecade[sc][di];
+      return { decade: dec, rel };
+    }).filter(Boolean);
+  }
+  return pts;
+}
 
-  // ── RELATIVE MODE: regional warming MINUS global warming ──────────────────
-  // Global warming at each decade = tsData[decade_year] - tsData[2020]
-  const globalBase = {};
-  const globalAtDecade = {}; // global warming by each decade
+// ── Helper: draw one country's lines + dots on reg-g ─────────────────────────
+// primary=true  → solid lines, filled dots  (blue / red SSP colors)
+// primary=false → dashed lines, hollow dots (same SSP colors)
+function drawRegLines(rg, relPts, scList, primary, countryLabel) {
+  const lineGen = d3.line().x(d => xSc(d.decade)).y(d => ySc(d.rel)).curve(d3.curveMonotoneX);
+  const sfx = primary ? '' : '2';
+  // Both countries share the same SSP blue/red palette.
+  // Country identity is encoded purely through line style.
+  const dashArray = primary ? 'none' : '7,5';
+
+  for (const sc of scList) {
+    const pts = relPts[sc];
+    if (!pts?.length) continue;
+
+    rg.append('path').datum(pts)
+      .attr('stroke', C[sc]).attr('stroke-width', primary ? 2.5 : 2)
+      .attr('stroke-dasharray', dashArray)
+      .attr('fill', 'none').attr('opacity', primary ? 1 : 0.85)
+      .attr('d', lineGen(pts));
+
+    rg.selectAll(`.rdot${sfx}-${sc}`).data(pts).join('circle')
+      .attr('cx', d => xSc(d.decade)).attr('cy', d => ySc(d.rel))
+      .attr('r', primary ? 6 : 5)
+      .attr('fill', primary ? C[sc] : 'var(--bg)')
+      .attr('stroke', C[sc]).attr('stroke-width', primary ? 1.5 : 2);
+
+    // Temperature labels above/below dots (skip 2020 anchor)
+    rg.selectAll(`.rdlbl${sfx}-${sc}`).data(pts.filter(d => d.decade !== 2020)).join('text')
+      .attr('x', d => xSc(d.decade))
+      .attr('y', d => ySc(d.rel) + (primary ? (d.rel >= 0 ? -10 : 18) : (d.rel >= 0 ? 18 : -10)))
+      .attr('text-anchor', 'middle').attr('fill', C[sc])
+      .attr('font-size', '9px').attr('font-weight', '600').attr('opacity', primary ? 1 : 0.85)
+      .style('paint-order', 'stroke').style('stroke', 'var(--bg)').style('stroke-width', '3px')
+      .text(d => (d.rel >= 0 ? '+' : '') + d.rel.toFixed(2) + '°C');
+  }
+
+}
+
+function updateRegOverlay() {
+  if (!xSc) return;
+  const rg = d3.select('#reg-g');
+  rg.selectAll('*').remove();
+  if (!S.country) return;
+
+  const scList = S.scenario === 'both' ? SCENS : [S.scenario];
+
+  // Global warming deltas (reference)
+  const globalAtDecade = {};
   for (const sc of SCENS) {
     const base = tsData.find(d => d.scenario === sc && d.year === 2020)?.tas ?? 0;
-    globalBase[sc] = base;
     globalAtDecade[sc] = DECADES.map(dec => {
       const row = tsData.find(d => d.scenario === sc && d.year === dec);
       return row ? row.tas - base : 0;
     });
   }
 
-  // Regional warming at each decade = regional_mean[decade] - regional_mean[2020]
-  // Relative = regional_warming - global_warming  →  how much faster/slower
-  const relPts = {};
-  for (const sc of scList) {
-    const base0 = cellMeans[sc][0];
-    if (base0.n === 0) continue;
-    const regBase = base0.sum / base0.n;
-    relPts[sc] = DECADES.map((dec, di) => {
-      const m = cellMeans[sc][di];
-      if (m.n === 0) return null;
-      const regWarm = (m.sum / m.n) - regBase;
-      const relVal  = regWarm - globalAtDecade[sc][di];
-      return { decade: dec, rel: relVal, regWarm, globWarm: globalAtDecade[sc][di] };
-    }).filter(Boolean);
+  // Country 1
+  const cm1 = cellMeansForFeat(S.country);
+  if (!scList.some(sc => cm1[sc]?.[0]?.n > 0)) return;
+  const rp1 = relPtsFromCM(cm1, globalAtDecade);
+
+  // Country 2 (optional)
+  let rp2 = {};
+  if (S.country2) {
+    const cm2 = cellMeansForFeat(S.country2);
+    if (scList.some(sc => cm2[sc]?.[0]?.n > 0)) rp2 = relPtsFromCM(cm2, globalAtDecade);
   }
 
-  const allRel = Object.values(relPts).flat().map(d => d.rel);
+  // Y-scale from combined range
+  const allRel = [...Object.values(rp1), ...Object.values(rp2)].flat().map(d => d.rel);
   if (!allRel.length) return;
-
-  // Y-scale centred around 0: "°C faster than global average"
   const yPad = 0.4;
-  const yMin = Math.min(-0.3, d3.min(allRel)) - yPad;
-  const yMax = Math.max(0.3,  d3.max(allRel)) + yPad;
-  ySc = d3.scaleLinear().domain([yMin, yMax]).range([tsInnerH, 0]);
+  ySc = d3.scaleLinear()
+    .domain([Math.min(-0.3, d3.min(allRel)) - yPad, Math.max(0.3, d3.max(allRel)) + yPad])
+    .range([tsInnerH, 0]);
 
-  // Y-axis
   d3.select('#y-ax').call(d3.axisLeft(ySc).ticks(6)
     .tickFormat(d => (d > 0 ? '+' : '') + d.toFixed(1) + '°C'));
   d3.select('#ts-g').select('.ax-label-y').text('Faster / slower than global avg (°C)');
-
-  // Hide global lines in relative mode — zero line + shading communicate the reference
   d3.select('#line-ssp245').style('opacity', 0);
   d3.select('#line-ssp585').style('opacity', 0);
 
-  // Shade faster (above 0) and slower (below 0) zones
+  // Zone shading + zero reference line
   const zeroY = ySc(0);
-  rg.append('rect')
-    .attr('x', 0).attr('width', tsInnerW)
-    .attr('y', 0).attr('height', zeroY)
-    .attr('fill', 'rgba(247,129,102,0.06)');
-  rg.append('rect')
-    .attr('x', 0).attr('width', tsInnerW)
-    .attr('y', zeroY).attr('height', tsInnerH - zeroY)
-    .attr('fill', 'rgba(88,166,255,0.06)');
+  rg.append('rect').attr('x',0).attr('width',tsInnerW).attr('y',0).attr('height',zeroY)
+    .attr('fill','rgba(247,129,102,0.06)');
+  rg.append('rect').attr('x',0).attr('width',tsInnerW).attr('y',zeroY).attr('height',tsInnerH-zeroY)
+    .attr('fill','rgba(88,166,255,0.06)');
+  rg.append('line').attr('x1',0).attr('x2',tsInnerW).attr('y1',zeroY).attr('y2',zeroY)
+    .attr('stroke','rgba(255,255,255,0.35)').attr('stroke-width',1.5);
+  rg.append('text').attr('x',tsInnerW/2).attr('y',zeroY+12).attr('text-anchor','middle')
+    .attr('fill','rgba(255,255,255,0.35)').attr('font-size','9px').text('= global average');
+  rg.append('text').attr('x',tsInnerW-6).attr('y',14).attr('text-anchor','end')
+    .attr('fill','rgba(247,129,102,0.55)').attr('font-size','9px').text('▲ warming faster than world');
+  rg.append('text').attr('x',tsInnerW-6).attr('y',tsInnerH-6).attr('text-anchor','end')
+    .attr('fill','rgba(88,166,255,0.55)').attr('font-size','9px').text('▼ warming slower than world');
 
-  // Zero line + label
-  rg.append('line')
-    .attr('x1', 0).attr('x2', tsInnerW)
-    .attr('y1', zeroY).attr('y2', zeroY)
-    .attr('stroke', 'rgba(255,255,255,0.35)').attr('stroke-width', 1.5);
-  rg.append('text')
-    .attr('x', tsInnerW / 2).attr('y', zeroY + 12)
-    .attr('text-anchor', 'middle').attr('fill', 'rgba(255,255,255,0.35)')
-    .attr('font-size', '9px').text('= global average');
-
-  // Zone labels
-  rg.append('text').attr('x', tsInnerW - 6).attr('y', 14)
-    .attr('text-anchor', 'end').attr('fill', 'rgba(247,129,102,0.55)').attr('font-size', '9px').text('▲ warming faster than world');
-  rg.append('text').attr('x', tsInnerW - 6).attr('y', tsInnerH - 6)
-    .attr('text-anchor', 'end').attr('fill', 'rgba(88,166,255,0.55)').attr('font-size', '9px').text('▼ warming slower than world');
-
-  // Global warming context note (bottom annotation)
   const g245end = globalAtDecade['ssp245'][3].toFixed(1);
   const g585end = globalAtDecade['ssp585'][3].toFixed(1);
-  rg.append('text')
-    .attr('x', tsInnerW / 2).attr('y', tsInnerH + 34)
-    .attr('text-anchor', 'middle').attr('fill', 'var(--muted)')
-    .attr('font-size', '9px')
+  rg.append('text').attr('x',tsInnerW/2).attr('y',tsInnerH+52).attr('text-anchor','middle')
+    .attr('fill','var(--muted)').attr('font-size','9px')
     .text(`Global warms +${g245end}°C (SSP2-4.5) / +${g585end}°C (SSP5-8.5) by 2080s from 2020`);
 
   updateDecMark();
+  drawRegLines(rg, rp1, scList, true,  S.countryName);
+  if (Object.keys(rp2).length) drawRegLines(rg, rp2, scList, false, S.countryName2);
 
-  // Draw relative lines + dots
-  const regLineGen = d3.line()
-    .x(d => xSc(d.decade)).y(d => ySc(d.rel)).curve(d3.curveMonotoneX);
-
-  for (const sc of scList) {
-    const pts = relPts[sc];
-    if (!pts?.length) continue;
-
-    rg.append('path').datum(pts).attr('class','reg-line')
-      .attr('stroke', C[sc]).attr('stroke-width', 2.5).attr('d', regLineGen(pts));
-
-    rg.selectAll(`.rdot-${sc}`).data(pts).join('circle')
-      .attr('class', `reg-dot rdot-${sc}`)
-      .attr('cx', d => xSc(d.decade)).attr('cy', d => ySc(d.rel))
-      .attr('r', 6).attr('fill', C[sc]).attr('stroke', 'var(--bg)').attr('stroke-width', 1.5);
-
-    // Value labels on dots — skip the 2020 baseline (always +0.00°C)
-    rg.selectAll(`.rdlbl-${sc}`).data(pts.filter(d => d.decade !== 2020)).join('text')
-      .attr('class', `rdlbl-${sc}`)
-      .attr('x', d => xSc(d.decade))
-      .attr('y', d => ySc(d.rel) + (d.rel >= 0 ? -10 : 18))
-      .attr('text-anchor', 'middle').attr('fill', C[sc])
-      .attr('font-size', '9px').attr('font-weight', '600')
-      .style('paint-order', 'stroke')
-      .style('stroke', 'var(--bg)').style('stroke-width', '3px')
-      .text(d => (d.rel >= 0 ? '+' : '') + d.rel.toFixed(2) + '°C');
-  }
-
+  updateCountryKey();
   buildTsLegend(true);
+}
+
+// ─── COUNTRY KEY (above chart, below title) ───────────────────────────────────
+function updateCountryKey() {
+  const el = document.getElementById('country-key');
+  if (!S.country2) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = `
+    <div class="ck-item">
+      <div class="ck-swatch" style="border-top:3px solid var(--text)"></div>
+      <span class="ck-label">${S.countryName}</span>
+    </div>
+    <div class="ck-item">
+      <div class="ck-swatch" style="border-top:2.5px dashed var(--text)"></div>
+      <span class="ck-label">${S.countryName2}</span>
+    </div>`;
 }
 
 // ─── TS LEGEND ────────────────────────────────────────────────────────────────
 function buildTsLegend(anomaly = false) {
   const globalLabel = anomaly ? 'global warming (Δ vs 2020)' : 'global mean (°C)';
-  const regLabel    = anomaly ? 'regional warming (Δ vs 2020) — 4 decades' : 'selected region — 4 decadal means';
-  document.getElementById('ts-legend').innerHTML = `
-    <div class="leg-item"><div class="leg-sw" style="background:var(--c245)"></div><span>${LAB.ssp245} — ${globalLabel}</span></div>
-    <div class="leg-item"><div class="leg-sw" style="background:var(--c585)"></div><span>${LAB.ssp585} — ${globalLabel}</span></div>
-    <div class="leg-item"><div class="leg-sw dash" style="border-color:var(--muted)"></div><span>${regLabel}</span></div>
-    <div class="leg-item"><div style="width:18px;border-top:2px dashed var(--csel)"></div><span>Selected decade</span></div>`;
+  const comparing = anomaly && S.country2;
+  let html = '';
+
+  if (comparing) {
+    // 2-color + 2-style legend: color = scenario, line style = country
+    const n1 = S.countryName  || 'Country 1';
+    const n2 = S.countryName2 || 'Country 2';
+    html = `
+      <div class="leg-item"><div class="leg-sw" style="background:var(--c245)"></div><span>SSP2-4.5 (moderate)</span></div>
+      <div class="leg-item"><div class="leg-sw" style="background:var(--c585)"></div><span>SSP5-8.5 (high)</span></div>
+      <div class="leg-item"><div style="width:22px;border-top:2.5px solid var(--text)"></div><span>${n1} — solid lines</span></div>
+      <div class="leg-item"><div style="width:22px;border-top:2px dashed var(--text)"></div><span>${n2} — dashed lines</span></div>
+      <div class="leg-item"><div style="width:18px;border-top:2px dashed var(--csel)"></div><span>Selected decade</span></div>`;
+  } else {
+    const regLabel = anomaly ? 'regional warming (Δ vs 2020) — 4 decades' : 'selected region — 4 decadal means';
+    html = `
+      <div class="leg-item"><div class="leg-sw" style="background:var(--c245)"></div><span>${LAB.ssp245} — ${globalLabel}</span></div>
+      <div class="leg-item"><div class="leg-sw" style="background:var(--c585)"></div><span>${LAB.ssp585} — ${globalLabel}</span></div>
+      <div class="leg-item"><div class="leg-sw dash" style="border-color:var(--muted)"></div><span>${regLabel}</span></div>
+      <div class="leg-item"><div style="width:18px;border-top:2px dashed var(--csel)"></div><span>Selected decade</span></div>`;
+  }
+  document.getElementById('ts-legend').innerHTML = html;
 }
 
 // ─── TS HOVER ─────────────────────────────────────────────────────────────────
@@ -775,8 +904,12 @@ function tsHover(event) {
   const base245 = anomaly ? (tsData.find(d => d.scenario==='ssp245' && d.year===2020)?.tas ?? 0) : 0;
   const base585 = anomaly ? (tsData.find(d => d.scenario==='ssp585' && d.year===2020)?.tas ?? 0) : 0;
 
-  if (show('ssp245')) d3.select('#hdot-ssp245').attr('cx',xSc(p245.year)).attr('cy',ySc(p245.tas - base245)).style('opacity',1);
-  if (show('ssp585')) d3.select('#hdot-ssp585').attr('cx',xSc(p585.year)).attr('cy',ySc(p585.tas - base585)).style('opacity',1);
+  // Only show hover dots in absolute mode — in relative mode the global lines are hidden
+  // so the dots would appear floating with no line attached
+  if (!anomaly) {
+    if (show('ssp245')) d3.select('#hdot-ssp245').attr('cx',xSc(p245.year)).attr('cy',ySc(p245.tas - base245)).style('opacity',1);
+    if (show('ssp585')) d3.select('#hdot-ssp585').attr('cx',xSc(p585.year)).attr('cy',ySc(p585.tas - base585)).style('opacity',1);
+  }
 
   const fmt = (val, base) => anomaly
     ? (val - base >= 0 ? '+' : '') + (val - base).toFixed(2) + '°C vs 2020'
@@ -810,14 +943,21 @@ function mapHover(event, d) {
 
   const temps = [];
   const scList = S.scenario === 'both' ? SCENS : [S.scenario];
-  for (const sc of scList) { const t = tempGrids[sc][S.di][gi]; if (!isNaN(t)) temps.push(t); }
+  const di0h = Math.min(3, Math.floor((S.year - 2020) / 20));
+  const di1h = Math.min(3, di0h + 1);
+  const alphH = di0h < 3 ? (S.year - DECADES[di0h]) / 20 : 0;
+  for (const sc of scList) {
+    const t = tempGrids[sc][di0h][gi] + alphH * (tempGrids[sc][di1h][gi] - tempGrids[sc][di0h][gi]);
+    if (!isNaN(t)) temps.push(t);
+  }
   const tempStr = temps.length ? (temps.reduce((a,b)=>a+b)/temps.length).toFixed(1)+'°C' : '—';
 
   const tt = document.getElementById('tooltip');
+  const clickHint = S.country ? `<div class="tt-row" style="color:#00bcd4;font-size:0.68rem;margin-top:4px">Click to compare vs ${S.countryName} →</div>` : `<div class="tt-row" style="color:var(--csel);font-size:0.68rem;margin-top:4px">Click to see regional trend →</div>`;
   tt.innerHTML = `<div class="tt-hd">${name}</div>
-    <div class="tt-row">Decade: <span>${DECADES[S.di]}s</span></div>
+    <div class="tt-row">Year: <span>${S.year}</span></div>
     <div class="tt-row">Temp (centroid): <span>${tempStr}</span></div>
-    <div class="tt-row" style="color:var(--csel);font-size:0.68rem;margin-top:4px">Click to see regional trend →</div>`;
+    ${clickHint}`;
   tt.classList.add('show');
   tt.style.left = (event.clientX + 14) + 'px';
   tt.style.top  = (event.clientY - 10) + 'px';
@@ -825,13 +965,58 @@ function mapHover(event, d) {
 function mapLeave() { document.getElementById('tooltip').classList.remove('show'); }
 
 function mapClick(event, d) {
-  S.country = d;
-  S.countryName = cName(d.id);
-  d3.selectAll('.country').classed('sel', dd => dd.id === d.id);
+  const id = d.id;
+  if (!S.country) {
+    // First selection
+    S.country = d; S.countryName = cName(id);
+  } else if (S.country.id === id) {
+    // Re-clicked primary → deselect, demote country2 to primary
+    S.country = S.country2; S.countryName = S.countryName2;
+    S.country2 = null; S.countryName2 = null;
+    if (!S.country) { clearSel(); return; }
+  } else if (S.country2 && S.country2.id === id) {
+    // Re-clicked comparison → remove it
+    S.country2 = null; S.countryName2 = null;
+  } else {
+    // New country → set as comparison
+    S.country2 = d; S.countryName2 = cName(id);
+  }
+
+  d3.selectAll('.country')
+    .classed('sel',  dd => S.country  && dd.id === S.country.id)
+    .classed('sel2', dd => S.country2 && dd.id === S.country2.id);
+
   document.getElementById('sel-info').style.display = 'flex';
   document.getElementById('sel-name').textContent = S.countryName;
-  document.getElementById('ts-hd').textContent = `${S.countryName} — Regional Temperature Trend`;
+
+  const vs = document.getElementById('vs-sep');
+  const nm2 = document.getElementById('sel-name2');
+  if (S.country2) {
+    vs.style.display = ''; nm2.style.display = '';
+    nm2.textContent = S.countryName2;
+    document.getElementById('ts-hd').textContent = `${S.countryName} vs ${S.countryName2}`;
+  } else {
+    vs.style.display = 'none'; nm2.style.display = 'none';
+    document.getElementById('ts-hd').textContent = `${S.countryName} — Regional Temperature Trend`;
+  }
+
+  showRankBadges();
   updateRegOverlay();
+}
+
+function showRankBadges() {
+  const b1 = document.getElementById('rank-badge1');
+  const b2 = document.getElementById('rank-badge2');
+  if (countryRankings && S.country) {
+    const r1 = countryRankings.findIndex(r => String(r.id) === String(S.country.id)) + 1;
+    b1.textContent = r1 ? `#${r1} warmest` : '';
+    b1.style.display = r1 ? '' : 'none';
+  } else { b1.style.display = 'none'; }
+  if (countryRankings && S.country2) {
+    const r2 = countryRankings.findIndex(r => String(r.id) === String(S.country2.id)) + 1;
+    b2.textContent = r2 ? `#${r2} warmest` : '';
+    b2.style.display = r2 ? '' : 'none';
+  } else { b2.style.display = 'none'; }
 }
 
 // ─── CONTROLS ─────────────────────────────────────────────────────────────────
@@ -846,11 +1031,17 @@ function setScenario(sc) {
 
 function clearSel() {
   S.country = null; S.countryName = null;
-  d3.selectAll('.country').classed('sel', false);
+  S.country2 = null; S.countryName2 = null;
+  d3.selectAll('.country').classed('sel', false).classed('sel2', false);
   document.getElementById('sel-info').style.display = 'none';
+  document.getElementById('vs-sep').style.display = 'none';
+  document.getElementById('sel-name2').style.display = 'none';
+  document.getElementById('rank-badge1').style.display = 'none';
+  document.getElementById('rank-badge2').style.display = 'none';
   document.getElementById('ts-hd').textContent = 'Global Mean Temperature';
+  document.getElementById('country-key').style.display = 'none';
   restoreAbsoluteMode();
-  updateRegOverlay(); // clears reg-g since S.country is null
+  updateRegOverlay();
 }
 
 function restoreAbsoluteMode() {
@@ -869,8 +1060,80 @@ function restoreAbsoluteMode() {
   buildTsLegend(false);
 }
 
-window.setScenario = setScenario;
-window.clearSel    = clearSel;
+// ─── RANKINGS (centroid sampling, computed once after load) ──────────────────
+let countryRankings = null;
+function precomputeRankings() {
+  const gBase = tsData.find(d => d.scenario==='ssp585' && d.year===2020)?.tas ?? 0;
+  const gEnd  = tsData.find(d => d.scenario==='ssp585' && d.year===2080)?.tas ?? 0;
+  const globalDelta = gEnd - gBase;
+  const latStep = latVals[1] - latVals[0];
+  const lonStep = lonVals[1] - lonVals[0];
+  const results = [];
+  for (const feat of countryFeats) {
+    const [clon, clat] = d3.geoCentroid(feat);
+    const lon360 = clon < 0 ? clon + 360 : clon;
+    const li = Math.max(0, Math.min(nLat-1, Math.round((clat - latVals[0]) / latStep)));
+    const lo = Math.max(0, Math.min(nLon-1, Math.round((lon360 - lonVals[0]) / lonStep)));
+    const gi = li * nLon + lo;
+    const t0 = tempGrids['ssp585'][0][gi];
+    const t3 = tempGrids['ssp585'][3][gi];
+    if (!isNaN(t0) && !isNaN(t3)) {
+      results.push({ id: feat.id, relWarming: (t3 - t0) - globalDelta });
+    }
+  }
+  results.sort((a, b) => b.relWarming - a.relWarming);
+  countryRankings = results;
+  showRankBadges(); // refresh badges if a country is already selected
+}
+
+// ─── SEARCH ───────────────────────────────────────────────────────────────────
+function initSearch() {
+  const input = document.getElementById('country-search');
+  const drop  = document.getElementById('search-drop');
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { drop.style.display = 'none'; return; }
+    const matches = countryFeats
+      .map(f => ({ f, name: cName(f.id) }))
+      .filter(({name}) => name.toLowerCase().includes(q))
+      .sort((a, b) => a.name.toLowerCase().indexOf(q) - b.name.toLowerCase().indexOf(q))
+      .slice(0, 8);
+    if (!matches.length) { drop.style.display = 'none'; return; }
+    drop.innerHTML = matches.map(({f, name}) =>
+      `<div class="search-item" data-id="${f.id}">${name}</div>`).join('');
+    drop.style.display = 'block';
+    drop.querySelectorAll('.search-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const feat = countryFeats.find(f => String(f.id) === el.dataset.id);
+        if (feat) mapClick(null, feat);
+        input.value = ''; drop.style.display = 'none';
+      });
+    });
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { input.value = ''; drop.style.display = 'none'; }
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#search-wrap')) drop.style.display = 'none';
+  });
+}
+
+function setComparison(name1, name2) {
+  if (!countryFeats) return;
+  clearSel();
+  const f1 = countryFeats.find(f => cName(f.id) === name1);
+  const f2 = countryFeats.find(f => cName(f.id) === name2);
+  if (f1) mapClick(null, f1);
+  if (f2) mapClick(null, f2);
+}
+
+window.setScenario   = setScenario;
+window.clearSel      = clearSel;
+window.setComparison = setComparison;
 
 // ─── ANIMATION ────────────────────────────────────────────────────────────────
 const SPEEDS = { slow: 220, med: 100, fast: 40 }; // ms per year step
@@ -913,8 +1176,9 @@ function togglePlay() {
   _startTimer();
 }
 
-window.togglePlay = togglePlay;
-window.setSpeed   = setSpeed;
+window.togglePlay  = togglePlay;
+window.setSpeed    = setSpeed;
+window.mapClick    = mapClick;
 
 // Reinitialize on resize (data already loaded — just recalc layout)
 let resizeTimer;
