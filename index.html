@@ -30,6 +30,7 @@ body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg)
 header { padding: 18px 36px; border-bottom: 1px solid var(--border); }
 header h1 { font-size: 1.25rem; font-weight: 700; }
 header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+.header-desc { font-size: 0.76rem; color: var(--muted); margin-top: 7px; max-width: 900px; line-height: 1.55; }
 
 #controls {
   display: flex; gap: 28px; align-items: center; flex-wrap: wrap;
@@ -197,6 +198,7 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72
 <header>
   <h1>Global Surface Temperature Projections Under Climate Change</h1>
   <p>CMIP6 ensemble &nbsp;·&nbsp; SSP2-4.5 vs SSP5-8.5 emission scenarios &nbsp;·&nbsp; 2015–2100 projection</p>
+  <p class="header-desc">In climate modeling, <strong>SSP</strong> stands for <strong>Shared Socioeconomic Pathways</strong>. Each SSP scenario combines a socioeconomic storyline (SSP1, SSP2, SSP3, etc.) with a projected radiative forcing level by 2100 (such as 4.5 W/m² or 8.5 W/m²), which measures additional heat trapped in Earth's climate system using watts per square meter. Higher values correspond to greater levels of warming and more severe climate impacts. Together, these components describe a possible future world and the climate impacts associated with it.</p>
 </header>
 
 <div id="controls">
