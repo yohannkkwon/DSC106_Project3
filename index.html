@@ -61,10 +61,16 @@ header p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
 }
 .speed-btn:hover { background: rgba(255,255,255,0.06); }
 .speed-btn.on { background: rgba(255,215,0,0.12); border-color: var(--csel); color: var(--csel); }
-#ssp-info { padding: 10px 0 0; display: flex; flex-direction: column; gap: 5px; }
+#ssp-info {
+  padding: 14px 36px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
 .ssp-head { font-size: 0.72rem; color: var(--text); font-weight: 600; margin-bottom: 2px; }
 .ssp-spectrum {
   display: flex; gap: 3px; align-items: stretch; margin: 4px 0;
+  flex-wrap: wrap;
 }
 .ssp-tier {
   flex: 1; text-align: center; padding: 4px 3px; border-radius: 4px;
@@ -263,20 +269,21 @@ footer { text-align: center; padding: 18px; color: var(--muted); font-size: 0.72
     <div id="country-key"></div>
     <svg id="ts-svg"></svg>
     <div id="ts-legend"></div>
-    <div id="ssp-info">
-      <span class="ssp-head">SSP = Shared Socioeconomic Pathway &mdash; the IPCC AR6 framework for modeling future emissions. Five tiers, from aggressive climate action to unchecked fossil-fuel growth:</span>
-      <div class="ssp-spectrum">
-        <div class="ssp-tier"><b>SSP1</b>Very low<br><small>(Paris-aligned)</small></div>
-        <div class="ssp-tier hi245"><b>SSP2-4.5 ★</b>Moderate<br><small>(this viz)</small></div>
-        <div class="ssp-tier"><b>SSP3-7.0</b>High<br><small>(regional rivalry)</small></div>
-        <div class="ssp-tier"><b>SSP4</b>Uneven<br><small>(inequality)</small></div>
-        <div class="ssp-tier hi585"><b>SSP5-8.5 ★</b>Very high<br><small>(this viz)</small></div>
-      </div>
-      <span class="ssp-def"><b style="color:var(--c245)">SSP2-4.5</b> — "Middle of the road": partial climate policy, CO₂ peaks and stabilizes mid-century (~4.5 W/m² radiative forcing by 2100).</span>
-      <span class="ssp-def"><b style="color:var(--c585)">SSP5-8.5</b> — Fossil-fuel intensive, no effective global policy; CO₂ roughly doubles by 2100 (~8.5 W/m²) — the high-end worst-case baseline.</span>
-      <span class="ssp-note">★ SSP1 (very low / Paris-aligned) is not included in this CMIP6 dataset subset. SSP2 and SSP5 represent the practical range from moderate policy action to inaction.</span>
-    </div>
   </div>
+</div>
+
+<div id="ssp-info">
+  <span class="ssp-head">SSP = Shared Socioeconomic Pathway &mdash; the IPCC AR6 framework for modeling future emissions. Five tiers, from aggressive climate action to unchecked fossil-fuel growth:</span>
+  <div class="ssp-spectrum">
+    <div class="ssp-tier"><b>SSP1</b>Very low<br><small>(Paris-aligned)</small></div>
+    <div class="ssp-tier hi245"><b>SSP2-4.5 ★</b>Moderate<br><small>(this viz)</small></div>
+    <div class="ssp-tier"><b>SSP3-7.0</b>High<br><small>(regional rivalry)</small></div>
+    <div class="ssp-tier"><b>SSP4</b>Uneven<br><small>(inequality)</small></div>
+    <div class="ssp-tier hi585"><b>SSP5-8.5 ★</b>Very high<br><small>(this viz)</small></div>
+  </div>
+  <span class="ssp-def"><b style="color:var(--c245)">SSP2-4.5</b> — "Middle of the road": partial climate policy, CO₂ peaks and stabilizes mid-century (~4.5 W/m² radiative forcing by 2100).</span>
+  <span class="ssp-def"><b style="color:var(--c585)">SSP5-8.5</b> — Fossil-fuel intensive, no effective global policy; CO₂ roughly doubles by 2100 (~8.5 W/m²) — the high-end worst-case baseline.</span>
+  <span class="ssp-note">★ SSP1 (very low / Paris-aligned) is not included in this CMIP6 dataset subset. SSP2 and SSP5 represent the practical range from moderate policy action to inaction.</span>
 </div>
 
 <div id="tooltip"></div>
